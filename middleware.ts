@@ -8,7 +8,7 @@ export default auth((req) => {
   const pathname = nextUrl.pathname;
 
   // Public paths — always accessible
-  const publicPaths = ["/login", "/forgot-password"];
+  const publicPaths = ["/login", "/forgot-password", "/set-password"];
   if (publicPaths.some((p) => pathname.startsWith(p))) {
     // Redirect already-logged-in users away from login
     if (isLoggedIn) {
@@ -57,5 +57,5 @@ export default auth((req) => {
 });
 
 export const config = {
-  matcher: ["/((?!api|_next/static|_next/image|favicon.ico|uploads).*)"],
+  matcher: ["/((?!api|_next/static|_next/image|favicon.ico|logos|revel-icon\\.png|uploads).*)"],
 };
