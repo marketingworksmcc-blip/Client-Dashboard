@@ -48,10 +48,10 @@ export async function createProof(clientId: string, prevState: unknown, formData
 
   const raw = {
     title: formData.get("title") as string,
-    description: formData.get("description") as string,
-    dueDate: formData.get("dueDate") as string,
-    externalUrl: formData.get("externalUrl") as string,
-    versionNotes: formData.get("versionNotes") as string,
+    description: (formData.get("description") as string) || "",
+    dueDate: (formData.get("dueDate") as string) || "",
+    externalUrl: (formData.get("externalUrl") as string) || "",
+    versionNotes: (formData.get("versionNotes") as string) || "",
   };
 
   const parsed = proofSchema.safeParse(raw);
@@ -275,4 +275,35 @@ export async function setProofInReview(proofId: string) {
   await requireRevelUser();
   await prisma.proof.update({ where: { id: proofId }, data: { status: "IN_REVIEW" } });
   revalidatePath(`/admin/proofs/${proofId}`);
+}
+
+export async function deleteProof(proofId: string) {
+  const session = await requireRevelUser();
+
+  const proof = await prisma.proof.findUnique({
+    where: { id: proofId },
+    include: { versions: { select: { fileUrl: true } } },
+  });
+  if (!proof) throw new Error("Proof not found");
+
+  const clientId = proof.clientId;
+
+  // Delete from DB (cascades to versions, comments, approvals)
+  await prisma.proof.delete({ where: { id: proofId } });
+
+  // Delete uploaded files from disk
+  const { unlink } = await import("fs/promises");
+  for (const version of proof.versions) {
+    if (version.fileUrl?.startsWith("/uploads/")) {
+      try {
+        await unlink(join(process.cwd(), "public", version.fileUrl));
+      } catch {
+        // File already gone — not a fatal error
+      }
+    }
+  }
+
+  revalidatePath(`/admin/clients/${clientId}/proofs`);
+  revalidatePath(`/admin/proofs`);
+  redirect(`/admin/clients/${clientId}/proofs`);
 }

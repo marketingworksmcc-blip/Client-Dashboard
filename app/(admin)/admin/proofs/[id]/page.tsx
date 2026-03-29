@@ -9,8 +9,9 @@ import { ProofViewer } from "@/components/proofs/ProofViewer";
 import { AddVersionForm } from "@/components/proofs/AddVersionForm";
 import { CommentThread } from "@/components/proofs/CommentThread";
 import { formatDate, formatRelativeTime } from "@/lib/utils";
-import { archiveProof, setProofInReview } from "@/lib/actions/proofs";
+import { archiveProof, setProofInReview, deleteProof } from "@/lib/actions/proofs";
 import { ArrowLeft, Building2, Calendar, Layers, CheckCircle, XCircle } from "lucide-react";
+import { DeleteProofButton } from "@/components/proofs/DeleteProofButton";
 import Link from "next/link";
 
 export default async function AdminProofDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -32,6 +33,7 @@ export default async function AdminProofDetailPage({ params }: { params: Promise
   const latestVersion = proof.versions[0];
   const archiveWithId = archiveProof.bind(null, id);
   const markInReviewWithId = setProofInReview.bind(null, id);
+  const deleteWithId = deleteProof.bind(null, id);
 
   return (
     <div>
@@ -135,28 +137,29 @@ export default async function AdminProofDetailPage({ params }: { params: Promise
           </Card>
 
           {/* Admin actions */}
-          {proof.status !== "ARCHIVED" && (
-            <Card className="border-[#e2e0d9]">
-              <CardHeader className="pb-3">
-                <CardTitle>Actions</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                {proof.status === "PENDING_REVIEW" && (
-                  <form action={markInReviewWithId}>
-                    <Button type="submit" variant="outline" className="w-full border-blue-200 text-blue-700 hover:bg-blue-50">
-                      Mark as In Review
-                    </Button>
-                  </form>
-                )}
+          <Card className="border-[#e2e0d9]">
+            <CardHeader className="pb-3">
+              <CardTitle>Actions</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              {proof.status === "PENDING_REVIEW" && (
+                <form action={markInReviewWithId}>
+                  <Button type="submit" variant="outline" className="w-full border-blue-200 text-blue-700 hover:bg-blue-50">
+                    Mark as In Review
+                  </Button>
+                </form>
+              )}
+              {proof.status !== "ARCHIVED" && (
                 <form action={archiveWithId}>
                   <Button type="submit" variant="outline"
                     className="w-full border-[#ff6b6c]/30 text-[#ff6b6c] hover:bg-[#ff6b6c]/5">
                     Archive Proof
                   </Button>
                 </form>
-              </CardContent>
-            </Card>
-          )}
+              )}
+              <DeleteProofButton proofTitle={proof.title} deleteAction={deleteWithId} />
+            </CardContent>
+          </Card>
 
           {/* Add new version */}
           {proof.status !== "ARCHIVED" && (
