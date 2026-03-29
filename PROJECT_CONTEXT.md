@@ -45,7 +45,7 @@ A white-labeled client portal that gives each client a branded, private space to
 | Fonts | Inter (body/UI) + Source Serif 4 (headings) via `next/font` |
 
 **Important quirks:**
-- Middleware is named `proxy.ts` (Next.js 16 convention, not `middleware.ts`)
+- Middleware is named `middleware.ts` at the project root (standard Next.js convention)
 - Tailwind config is CSS-only via `@theme inline` in `globals.css`
 - `useActionState` requires server actions to have `(prevState, formData)` signature
 - shadcn v4 ships `@base-ui/react` by default — we replaced Button, Dialog, AlertDialog with standard Radix/forwardRef implementations
@@ -150,7 +150,7 @@ public/
   logos/            # Client logo uploads (uploaded via branding form)
   revel-icon.png    # Revel brand icon (used as user avatar in client sidebar)
 
-proxy.ts            # Route protection middleware (Next.js 16)
+middleware.ts        # Route protection middleware (must be this exact name)
 types/index.ts      # Shared TypeScript types
 ```
 
