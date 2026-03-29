@@ -1,21 +1,60 @@
+import { prisma } from "@/lib/prisma";
 import { PageHeader } from "@/components/layout/PageHeader";
+import { ProofStatusBadge } from "@/components/proofs/ProofStatusBadge";
 import { EmptyState } from "@/components/shared/EmptyState";
-import { Card, CardContent } from "@/components/ui/card";
-import { ImageIcon } from "lucide-react";
+import { formatDate } from "@/lib/utils";
+import { ImageIcon, Layers } from "lucide-react";
+import Link from "next/link";
 
-export default function AdminProofsPage() {
+export default async function AdminProofsPage() {
+  const proofs = await prisma.proof.findMany({
+    orderBy: { createdAt: "desc" },
+    include: {
+      client: { select: { id: true, name: true } },
+      _count: { select: { versions: true, comments: true } },
+    },
+  });
+
   return (
     <div>
-      <PageHeader title="Proofs" subtitle="Manage creative proofs across all clients." />
-      <Card className="border-[#e2e0d9] shadow-none">
-        <CardContent className="p-0">
-          <EmptyState
-            icon={ImageIcon}
-            title="No proofs yet"
-            description="Upload proofs and assign them to clients. Coming in Phase 4."
-          />
-        </CardContent>
-      </Card>
+      <PageHeader title="Proofs" subtitle="All creative proofs across every client." />
+
+      {proofs.length === 0 ? (
+        <EmptyState
+          icon={ImageIcon}
+          title="No proofs yet"
+          description="Create a proof from a client's detail page."
+        />
+      ) : (
+        <div className="divide-y divide-[#f0efe9] border border-[#e2e0d9] rounded-xl overflow-hidden">
+          {proofs.map((proof) => (
+            <Link
+              key={proof.id}
+              href={`/admin/proofs/${proof.id}`}
+              className="flex items-center gap-4 px-5 py-4 bg-white hover:bg-[#faf9f6] transition-colors"
+            >
+              <div className="w-9 h-9 rounded-lg bg-amber-50 flex items-center justify-center flex-shrink-0">
+                <ImageIcon className="h-4 w-4 text-amber-600" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-[#464540] truncate">{proof.title}</p>
+                <div className="flex items-center gap-3 mt-0.5">
+                  <span className="text-xs text-[#8a8880]">{proof.client.name}</span>
+                  <span className="text-xs text-[#8a8880]">{formatDate(proof.createdAt)}</span>
+                  {proof.dueDate && (
+                    <span className="text-xs text-[#8a8880]">Due {formatDate(proof.dueDate)}</span>
+                  )}
+                  <span className="flex items-center gap-1 text-xs text-[#8a8880]">
+                    <Layers className="h-3 w-3" />
+                    {proof._count.versions}v
+                  </span>
+                </div>
+              </div>
+              <ProofStatusBadge status={proof.status} />
+            </Link>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
