@@ -18,7 +18,6 @@ import {
   ChevronRight,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
 const navItems = [
   { href: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -58,9 +57,7 @@ export function AdminSidebar({ userName, userEmail, userRole }: AdminSidebarProp
       {/* Logo */}
       <div className="px-5 py-5 border-b border-[#1e2e24]">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-[#d3de2c] flex items-center justify-center flex-shrink-0">
-            <span className="text-[#263a2e] font-bold text-sm">R</span>
-          </div>
+          <img src="/revel-icon.png" alt="Revel" className="w-8 h-8 rounded-lg object-cover flex-shrink-0" />
           <div className="min-w-0">
             <p className="text-[#ece9e1] font-semibold text-sm leading-tight truncate">
               Revel
@@ -122,11 +119,7 @@ export function AdminSidebar({ userName, userEmail, userRole }: AdminSidebarProp
         </Link>
 
         <div className="flex items-center gap-3 px-3 py-2.5 rounded-lg mt-2">
-          <Avatar className="h-7 w-7 flex-shrink-0">
-            <AvatarFallback className="bg-[#d3de2c] text-[#263a2e] text-xs font-semibold">
-              {initials}
-            </AvatarFallback>
-          </Avatar>
+          <img src="/revel-icon.png" alt="Revel" className="h-7 w-7 rounded-full object-cover flex-shrink-0" />
           <div className="flex-1 min-w-0">
             <p className="text-[#ece9e1] text-xs font-medium truncate">{userName}</p>
             <p className="text-[#cad1cc] text-xs opacity-60 truncate">

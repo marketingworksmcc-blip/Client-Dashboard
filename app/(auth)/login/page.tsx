@@ -57,9 +57,7 @@ export default function LoginPage() {
       <div className="w-full max-w-md space-y-8">
         {/* Logo / Brand */}
         <div className="text-center">
-          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-[#263a2e] mb-4">
-            <span className="text-[#d3de2c] font-bold text-xl tracking-tight">R</span>
-          </div>
+          <img src="/revel-icon.png" alt="Revel" className="w-14 h-14 rounded-2xl object-cover mx-auto mb-4" />
           <h1 className="font-heading text-2xl font-semibold text-[#263a2e] tracking-tight">
             Revel Client Portal
           </h1>
