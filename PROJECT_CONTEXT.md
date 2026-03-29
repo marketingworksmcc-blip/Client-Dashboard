@@ -61,9 +61,10 @@ A white-labeled client portal that gives each client a branded, private space to
 - **Phase 2** — Client management, user management, per-client branding with logo upload
 - **Phase 3** — Client dashboard with live data: summary cards, activity feed, upcoming deadlines
 - **Phase 4** — Proofs module: upload, versioning, review/approve workflow, comments, admin + client views
+- **Phase 5** — Documents module (upload/URL, status, delete) + Tasks module (priority, assignee, status updates, notes, client update toggle)
 
 ### Not Started
-- Phases 5–7
+- Phases 6–7
 
 ---
 
@@ -84,7 +85,7 @@ A white-labeled client portal that gives each client a branded, private space to
 
 ## 5. Current Phase
 
-**Current phase: Phase 5 — Documents + Tasks**
+**Current phase: Phase 6 — Budget + Analytics**
 
 ### Phase 4 — Complete
 - `lib/actions/proofs.ts` — all server actions: createProof, addProofVersion, submitApproval, addComment, archiveProof, setProofInReview
@@ -94,10 +95,17 @@ A white-labeled client portal that gives each client a branded, private space to
 - File uploads saved to `public/uploads/proofs/`; external URL alternative supported
 - Status lifecycle: PENDING_REVIEW → IN_REVIEW → APPROVED / CHANGES_REQUESTED
 
-### Phase 5 — Not started
-- Document library (upload, categorize, download)
-- Task board with status/priority tracking
-- Client-facing views for both
+### Phase 5 — Complete
+- `lib/actions/documents.ts` — createDocument, deleteDocument (with file cleanup)
+- `lib/actions/tasks.ts` — createTask, updateTaskStatus, addTaskNote, deleteTask
+- `components/documents/` — DocumentStatusBadge, NewDocumentForm, DeleteDocumentButton
+- `components/tasks/` — TaskStatusBadge, TaskPriorityBadge, NewTaskForm, TaskNotes, UpdateTaskStatus, DeleteTaskButton
+- Admin: per-client documents tab + upload page, global documents list; per-client tasks tab + new task page, global tasks list, task detail page
+- Client: documents list with download/external link; tasks list + detail with optional status update (controlled by allowClientUpdate flag)
+
+### Phase 6 — Not started
+- Budget tracker with line items
+- Analytics report embedding / external links
 
 ---
 
