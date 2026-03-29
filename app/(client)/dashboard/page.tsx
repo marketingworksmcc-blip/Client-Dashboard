@@ -10,7 +10,6 @@ import { ImageIcon, DollarSign, CheckSquare, FileText } from "lucide-react";
 
 export default async function ClientDashboardPage() {
   const session = await auth();
-  const userId = session!.user.id;
   const clientId = session!.user.clientIds?.[0];
 
   // Run all queries in parallel
@@ -33,13 +32,15 @@ export default async function ClientDashboardPage() {
         })
       : 0,
 
-    // Active tasks assigned to this user
-    prisma.task.count({
-      where: {
-        assignedToId: userId,
-        status: { in: ["TODO", "IN_PROGRESS", "NEEDS_INPUT"] },
-      },
-    }),
+    // Active tasks for this client
+    clientId
+      ? prisma.task.count({
+          where: {
+            clientId,
+            status: { in: ["TODO", "IN_PROGRESS", "NEEDS_INPUT"] },
+          },
+        })
+      : 0,
 
     // Documents requiring action for this client
     clientId
@@ -148,7 +149,7 @@ export default async function ClientDashboardPage() {
         <SummaryCard
           title="Active Tasks"
           value={activeTasks}
-          subtitle="Assigned to you"
+          subtitle="Incomplete tasks"
           icon={CheckSquare}
           iconBg="bg-blue-50"
           iconColor="text-blue-600"
