@@ -1,0 +1,331 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── ENUMS ───────────────────────────────────────────────────
+
+enum Role {
+  SUPER_ADMIN
+  REVEL_ADMIN
+  REVEL_TEAM
+  CLIENT_ADMIN
+  CLIENT_USER
+}
+
+enum ProofStatus {
+  PENDING_REVIEW
+  IN_REVIEW
+  APPROVED
+  CHANGES_REQUESTED
+  ARCHIVED
+}
+
+enum ApprovalAction {
+  APPROVED
+  CHANGES_REQUESTED
+}
+
+enum DocumentStatus {
+  REQUIRES_REVIEW
+  REQUIRES_SIGNATURE
+  REFERENCE
+}
+
+enum TaskStatus {
+  TODO
+  IN_PROGRESS
+  NEEDS_INPUT
+  COMPLETED
+  ARCHIVED
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum ReportType {
+  EXTERNAL_LINK
+  EMBEDDED
+  MANUAL
+}
+
+// ─── USERS + AUTH ────────────────────────────────────────────
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  name         String
+  passwordHash String
+  role         Role     @default(CLIENT_USER)
+  avatarUrl    String?
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  clientUsers         ClientUser[]
+  createdProofs       Proof[]              @relation("ProofCreatedBy")
+  proofComments       ProofComment[]
+  proofApprovals      ProofApproval[]
+  assignedTasks       Task[]               @relation("TaskAssignee")
+  createdTasks        Task[]               @relation("TaskCreatedBy")
+  taskNotes           TaskNote[]
+  activityLogs        ActivityLog[]
+  passwordResetTokens PasswordResetToken[]
+}
+
+model PasswordResetToken {
+  id        String    @id @default(cuid())
+  userId    String
+  token     String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// ─── CLIENTS ─────────────────────────────────────────────────
+
+model Client {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String   @unique
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  brandSettings    ClientBrandSettings?
+  clientUsers      ClientUser[]
+  proofs           Proof[]
+  documents        Document[]
+  tasks            Task[]
+  budgets          Budget[]
+  analyticsReports AnalyticsReport[]
+  activityLogs     ActivityLog[]
+}
+
+model ClientUser {
+  id        String  @id @default(cuid())
+  userId    String
+  clientId  String
+  isPrimary Boolean @default(false)
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  client Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, clientId])
+}
+
+model ClientBrandSettings {
+  id              String  @id @default(cuid())
+  clientId        String  @unique
+  portalName      String?
+  portalSubtitle  String?
+  logoUrl         String?
+  faviconUrl      String?
+  primaryColor    String?
+  secondaryColor  String?
+  backgroundStyle String?
+  customCss       String?
+
+  client Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
+}
+
+// ─── PROOFS ──────────────────────────────────────────────────
+
+model Proof {
+  id          String      @id @default(cuid())
+  clientId    String
+  title       String
+  description String?
+  status      ProofStatus @default(PENDING_REVIEW)
+  dueDate     DateTime?
+  createdById String
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  client    Client          @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  createdBy User            @relation("ProofCreatedBy", fields: [createdById], references: [id], onDelete: Cascade)
+  versions  ProofVersion[]
+  comments  ProofComment[]
+  approvals ProofApproval[]
+}
+
+model ProofVersion {
+  id          String   @id @default(cuid())
+  proofId     String
+  versionNum  Int
+  fileUrl     String?
+  externalUrl String?
+  fileName    String?
+  fileSize    Int?
+  mimeType    String?
+  notes       String?
+  createdById String
+  createdAt   DateTime @default(now())
+
+  proof Proof @relation(fields: [proofId], references: [id], onDelete: Cascade)
+}
+
+model ProofComment {
+  id        String   @id @default(cuid())
+  proofId   String
+  userId    String
+  content   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  proof Proof @relation(fields: [proofId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model ProofApproval {
+  id        String         @id @default(cuid())
+  proofId   String
+  userId    String
+  action    ApprovalAction
+  notes     String?
+  createdAt DateTime       @default(now())
+
+  proof Proof @relation(fields: [proofId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// ─── DOCUMENTS ───────────────────────────────────────────────
+
+model Document {
+  id          String         @id @default(cuid())
+  clientId    String
+  title       String
+  description String?
+  fileUrl     String?
+  externalUrl String?
+  fileName    String?
+  fileSize    Int?
+  mimeType    String?
+  category    String?
+  status      DocumentStatus @default(REFERENCE)
+  createdById String
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  client Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
+}
+
+// ─── TASKS ───────────────────────────────────────────────────
+
+model Task {
+  id                String     @id @default(cuid())
+  clientId          String
+  title             String
+  description       String?
+  status            TaskStatus @default(TODO)
+  priority          Priority   @default(MEDIUM)
+  dueDate           DateTime?
+  assignedToId      String?
+  createdById       String
+  allowClientUpdate Boolean    @default(false)
+  createdAt         DateTime   @default(now())
+  updatedAt         DateTime   @updatedAt
+
+  client     Client     @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  assignedTo User?      @relation("TaskAssignee", fields: [assignedToId], references: [id], onDelete: SetNull)
+  createdBy  User       @relation("TaskCreatedBy", fields: [createdById], references: [id], onDelete: Cascade)
+  notes      TaskNote[]
+}
+
+model TaskNote {
+  id        String   @id @default(cuid())
+  taskId    String
+  userId    String
+  content   String
+  createdAt DateTime @default(now())
+
+  task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// ─── BUDGET ──────────────────────────────────────────────────
+
+model Budget {
+  id          String   @id @default(cuid())
+  clientId    String
+  name        String
+  totalAmount Decimal  @db.Decimal(12, 2)
+  period      String?
+  notes       String?
+  createdById String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  client    Client           @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  lineItems BudgetLineItem[]
+}
+
+model BudgetLineItem {
+  id          String    @id @default(cuid())
+  budgetId    String
+  category    String
+  description String?
+  amount      Decimal   @db.Decimal(12, 2)
+  date        DateTime?
+  createdAt   DateTime  @default(now())
+
+  budget Budget @relation(fields: [budgetId], references: [id], onDelete: Cascade)
+}
+
+// ─── ANALYTICS ───────────────────────────────────────────────
+
+model AnalyticsReport {
+  id          String     @id @default(cuid())
+  clientId    String
+  title       String
+  reportType  ReportType @default(MANUAL)
+  reportUrl   String?
+  embedMode   Boolean    @default(false)
+  isActive    Boolean    @default(true)
+  createdById String
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  client  Client            @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  metrics AnalyticsMetric[]
+}
+
+model AnalyticsMetric {
+  id          String    @id @default(cuid())
+  reportId    String
+  metricName  String
+  metricValue String
+  periodStart DateTime?
+  periodEnd   DateTime?
+  notes       String?
+  createdAt   DateTime  @default(now())
+
+  report AnalyticsReport @relation(fields: [reportId], references: [id], onDelete: Cascade)
+}
+
+// ─── ACTIVITY LOG ────────────────────────────────────────────
+
+model ActivityLog {
+  id          String   @id @default(cuid())
+  clientId    String?
+  userId      String
+  action      String
+  entityType  String
+  entityId    String?
+  entityTitle String?
+  metadata    Json?
+  createdAt   DateTime @default(now())
+
+  client Client? @relation(fields: [clientId], references: [id], onDelete: SetNull)
+  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+}

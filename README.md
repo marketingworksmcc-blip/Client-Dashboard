@@ -1,36 +1,140 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Revel Client Portal
 
-## Getting Started
+A production-ready client portal for Revel, a marketing agency. Clients can review creative proofs, track budgets, view analytics, manage documents, and complete tasks — all in a branded portal experience.
 
-First, run the development server:
+---
+
+## Tech Stack
+
+- **Framework**: Next.js 16 (App Router)
+- **Language**: TypeScript
+- **Styling**: Tailwind CSS v4
+- **Components**: shadcn/ui (Radix-based)
+- **ORM**: Prisma 5
+- **Database**: PostgreSQL
+- **Auth**: NextAuth v5 (Credentials)
+
+---
+
+## Prerequisites
+
+- Node.js 18+
+- PostgreSQL running locally (or a hosted instance)
+
+---
+
+## Setup
+
+### 1. Install dependencies
+
+```bash
+npm install
+```
+
+### 2. Configure environment
+
+```bash
+cp .env.example .env
+```
+
+Edit `.env`:
+
+```env
+DATABASE_URL="postgresql://USER:PASSWORD@localhost:5432/revel_portal?schema=public"
+AUTH_SECRET="run: openssl rand -base64 32"
+NEXTAUTH_URL="http://localhost:3000"
+```
+
+### 3. Create the database
+
+```bash
+createdb revel_portal
+```
+
+### 4. Run migrations + seed
+
+```bash
+npm run db:migrate
+npm run db:seed
+```
+
+### 5. Start dev server
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+---
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Demo Credentials
 
-## Learn More
+### Revel Team (→ `/admin/dashboard`)
 
-To learn more about Next.js, take a look at the following resources:
+| Role | Email | Password |
+|---|---|---|
+| Super Admin | superadmin@revel.agency | revel-super-2024 |
+| Revel Admin | admin@revel.agency | revel-admin-2024 |
+| Team Member | team@revel.agency | revel-team-2024 |
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### Client Portal (→ `/dashboard`)
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+| Client | Email | Password |
+|---|---|---|
+| Acme Co Admin | admin@acmeco.com | client-admin-2024 |
+| Acme Co User | user@acmeco.com | client-user-2024 |
+| Blue Harbor Admin | admin@blueharbor.com | client-admin-2024 |
 
-## Deploy on Vercel
+---
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Useful Commands
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```bash
+npm run dev          # Start dev server
+npm run build        # Production build
+npm run db:migrate   # Run Prisma migrations
+npm run db:seed      # Seed demo data
+npm run db:studio    # Open Prisma Studio (DB GUI)
+npm run db:reset     # Reset and re-seed database
+```
+
+---
+
+## Project Structure
+
+```
+app/
+  (auth)/login/       → Login page
+  (admin)/admin/      → Admin portal pages (Revel team)
+  (client)/           → Client portal pages
+  api/auth/           → NextAuth API route
+components/
+  ui/                 → shadcn/ui primitives
+  layout/             → Sidebars, PageHeader
+  dashboard/          → SummaryCard
+  shared/             → EmptyState, StatusBadge
+lib/
+  auth.ts             → NextAuth config
+  prisma.ts           → Prisma client singleton
+  permissions.ts      → Role/permission helpers
+  branding.ts         → Per-client branding resolver
+prisma/
+  schema.prisma       → Full data model
+  seed.ts             → Demo data seeder
+```
+
+---
+
+## Phase Roadmap
+
+| Phase | Status | Description |
+|---|---|---|
+| 0 | ✅ | Architecture + planning |
+| 1 | ✅ | Setup, design system, auth shell |
+| 2 | ⏳ | Database schema + client/user management |
+| 3 | ⏳ | Client dashboard + activity + deadlines |
+| 4 | ⏳ | Creative proofs module |
+| 5 | ⏳ | Documents + tasks |
+| 6 | ⏳ | Budget tracker + analytics |
+| 7 | ⏳ | Polish + production readiness |
