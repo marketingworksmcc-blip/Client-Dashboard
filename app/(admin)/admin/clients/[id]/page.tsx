@@ -2,10 +2,10 @@ import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ConfirmAction } from "@/components/shared/ConfirmAction";
 import { UpdateClientForm } from "@/components/admin/UpdateClientForm";
 import { archiveClient, restoreClient } from "@/lib/actions/clients";
-import { Users, ImageIcon, CheckSquare, FileText, Archive, RotateCcw } from "lucide-react";
+import { ArchiveClientButton } from "@/components/admin/ArchiveClientButton";
+import { Users, ImageIcon, CheckSquare, FileText, RotateCcw } from "lucide-react";
 import Link from "next/link";
 
 export default async function ClientOverviewPage({
@@ -97,22 +97,7 @@ export default async function ClientOverviewPage({
               </p>
             </div>
             {client.isActive ? (
-              <ConfirmAction
-                trigger={
-                  <Button
-                    variant="outline"
-                    className="border-[#ff6b6c]/30 text-[#ff6b6c] hover:bg-[#ff6b6c]/5 text-sm"
-                  >
-                    <Archive className="h-4 w-4 mr-1.5" />
-                    Archive
-                  </Button>
-                }
-                title="Archive this client?"
-                description={`${client.name} will be archived and portal users will lose access. You can restore it at any time.`}
-                actionLabel="Archive Client"
-                destructive
-                onConfirm={archiveClientWithId}
-              />
+              <ArchiveClientButton clientName={client.name} archiveAction={archiveClientWithId} />
             ) : (
               <form action={restoreClientWithId}>
                 <Button
