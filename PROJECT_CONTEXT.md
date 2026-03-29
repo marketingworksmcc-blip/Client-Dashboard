@@ -205,7 +205,15 @@ types/index.ts      # Shared TypeScript types
 
 6. **Update this file at the end of each phase.** When a phase is complete, update sections 3, 5, and 7 to reflect the new state.
 
-7. **Do not change the tech stack.** Prisma 5, not 7. Tailwind v4 CSS-only config. Radix-based shadcn components, not base-ui.
+7. **Push to GitHub at the end of each phase.** After updating this file, run:
+   ```bash
+   git add -A
+   git commit -m "phase X complete: <brief description>"
+   git push
+   ```
+   Remote: `https://github.com/marketingworksmcc-blip/Client-Dashboard.git`
+
+8. **Do not change the tech stack.** Prisma 5, not 7. Tailwind v4 CSS-only config. Radix-based shadcn components, not base-ui.
 
 ---
 
