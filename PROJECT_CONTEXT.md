@@ -60,9 +60,10 @@ A white-labeled client portal that gives each client a branded, private space to
 - **Phase 1** — Project setup, auth shell, login page, route protection, database connection, seed data
 - **Phase 2** — Client management, user management, per-client branding with logo upload
 - **Phase 3** — Client dashboard with live data: summary cards, activity feed, upcoming deadlines
+- **Phase 4** — Proofs module: upload, versioning, review/approve workflow, comments, admin + client views
 
 ### Not Started
-- Phases 4–7
+- Phases 5–7
 
 ---
 
@@ -83,20 +84,20 @@ A white-labeled client portal that gives each client a branded, private space to
 
 ## 5. Current Phase
 
-**Current phase: Phase 4 — Proofs Module**
+**Current phase: Phase 5 — Documents + Tasks**
 
-### Phase 3 — Complete
-- Summary cards wired to live DB data (pending proofs, budget spent, active tasks, docs to review)
-- Activity feed pulling from `ActivityLog` table with entity icons and relative timestamps
-- Deadline list combining `Proof.dueDate` + `Task.dueDate`, sorted ascending, with overdue/urgent badges
-- All queries run in parallel via `Promise.all`
-
-### Phase 4 — Not started
-- Upload proof files (save to `public/uploads/` or cloud storage)
-- Proof versioning (`ProofVersion` model)
-- Review flow: approve / request changes (`ProofApproval`)
-- Comments thread per proof (`ProofComment`)
+### Phase 4 — Complete
+- `lib/actions/proofs.ts` — all server actions: createProof, addProofVersion, submitApproval, addComment, archiveProof, setProofInReview
+- `components/proofs/` — ProofStatusBadge, ProofViewer, NewProofForm, AddVersionForm, ApprovalActions, CommentThread
+- Admin proof pages: global list, per-client list, detail page with version history + approval history
+- Client proof pages: scoped list (no ARCHIVED), detail with approval actions + comment thread
+- File uploads saved to `public/uploads/proofs/`; external URL alternative supported
 - Status lifecycle: PENDING_REVIEW → IN_REVIEW → APPROVED / CHANGES_REQUESTED
+
+### Phase 5 — Not started
+- Document library (upload, categorize, download)
+- Task board with status/priority tracking
+- Client-facing views for both
 
 ---
 
@@ -130,7 +131,7 @@ components/
   ui/               # shadcn/ui base components (all Radix-based)
 
 lib/
-  actions/          # Server actions (clients.ts, users.ts, setPassword.ts)
+  actions/          # Server actions (clients.ts, users.ts, setPassword.ts, proofs.ts)
   auth.ts           # NextAuth config
   branding.ts       # getClientBranding() helper + REVEL_DEFAULTS
   email.ts          # Resend email (sendWelcomeEmail)
@@ -169,9 +170,6 @@ types/index.ts      # Shared TypeScript types
 - None currently known
 
 ### Incomplete Features
-- Client dashboard summary cards show `—` placeholders (Phase 3 work remaining)
-- Activity feed is empty state only
-- Upcoming deadlines is empty state only
 - No resend-invite flow if welcome email fails (token exists in DB but no UI to trigger resend)
 
 ### Technical Debt
