@@ -59,9 +59,7 @@ A white-labeled client portal that gives each client a branded, private space to
 - **Phase 0** — Architecture planning and project structure
 - **Phase 1** — Project setup, auth shell, login page, route protection, database connection, seed data
 - **Phase 2** — Client management, user management, per-client branding with logo upload
-
-### Partially Complete
-- **Phase 3** — Client dashboard shell exists with placeholder summary cards and empty activity/deadline panels (real data not yet wired up)
+- **Phase 3** — Client dashboard with live data: summary cards, activity feed, upcoming deadlines
 
 ### Not Started
 - Phases 4–7
@@ -85,21 +83,20 @@ A white-labeled client portal that gives each client a branded, private space to
 
 ## 5. Current Phase
 
-**Current phase: Phase 3 — Client Dashboard**
+**Current phase: Phase 4 — Proofs Module**
 
-### Completed in Phase 3
-- Dashboard page shell (`app/(client)/dashboard/page.tsx`)
-- Summary cards component (`SummaryCard`) with placeholder `—` values
-- Empty state panels for Recent Activity and Upcoming Deadlines
+### Phase 3 — Complete
+- Summary cards wired to live DB data (pending proofs, budget spent, active tasks, docs to review)
+- Activity feed pulling from `ActivityLog` table with entity icons and relative timestamps
+- Deadline list combining `Proof.dueDate` + `Task.dueDate`, sorted ascending, with overdue/urgent badges
+- All queries run in parallel via `Promise.all`
 
-### Still Remaining in Phase 3
-- Wire up summary cards with real data from the database:
-  - Pending proof reviews count
-  - Budget spent this period
-  - Active tasks assigned to the user
-  - Documents requiring action
-- Build real Activity Feed (pull from `ActivityLog` table)
-- Build real Upcoming Deadlines list (pull from `Proof.dueDate` + `Task.dueDate`)
+### Phase 4 — Not started
+- Upload proof files (save to `public/uploads/` or cloud storage)
+- Proof versioning (`ProofVersion` model)
+- Review flow: approve / request changes (`ProofApproval`)
+- Comments thread per proof (`ProofComment`)
+- Status lifecycle: PENDING_REVIEW → IN_REVIEW → APPROVED / CHANGES_REQUESTED
 
 ---
 
