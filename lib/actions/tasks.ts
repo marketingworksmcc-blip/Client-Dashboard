@@ -5,7 +5,7 @@ import { auth } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
-import { canManageTasks, isRevelUser } from "@/lib/permissions";
+import { canManageClients, isRevelUser } from "@/lib/permissions";
 
 const taskSchema = z.object({
   title: z.string().min(1, "Title is required").max(200),
@@ -18,7 +18,7 @@ const taskSchema = z.object({
 
 async function requireRevelUser() {
   const session = await auth();
-  if (!session?.user || !canManageTasks(session.user.role)) {
+  if (!session?.user || !canManageClients(session.user.role)) {
     throw new Error("Unauthorized");
   }
   return session;

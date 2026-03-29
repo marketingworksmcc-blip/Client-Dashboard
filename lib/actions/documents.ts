@@ -5,7 +5,7 @@ import { auth } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
-import { canUploadDocuments } from "@/lib/permissions";
+import { canManageClients } from "@/lib/permissions";
 import { writeFile, mkdir } from "fs/promises";
 import { join } from "path";
 
@@ -19,7 +19,7 @@ const documentSchema = z.object({
 
 async function requireRevelUser() {
   const session = await auth();
-  if (!session?.user || !canUploadDocuments(session.user.role)) {
+  if (!session?.user || !canManageClients(session.user.role)) {
     throw new Error("Unauthorized");
   }
   return session;
