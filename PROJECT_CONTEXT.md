@@ -62,9 +62,10 @@ A white-labeled client portal that gives each client a branded, private space to
 - **Phase 3** — Client dashboard with live data: summary cards, activity feed, upcoming deadlines
 - **Phase 4** — Proofs module: upload, versioning, review/approve workflow, comments, admin + client views
 - **Phase 5** — Documents module (upload/URL, status, delete) + Tasks module (priority, assignee, status updates, notes, client update toggle)
+- **Phase 6** — Budget tracker (line items, progress bar, over-budget state) + Analytics reports (external link, embedded iframe, manual metrics)
 
 ### Not Started
-- Phases 6–7
+- Phase 7
 
 ---
 
@@ -85,7 +86,7 @@ A white-labeled client portal that gives each client a branded, private space to
 
 ## 5. Current Phase
 
-**Current phase: Phase 6 — Budget + Analytics**
+**Current phase: Phase 7 — Polish + Production**
 
 ### Phase 4 — Complete
 - `lib/actions/proofs.ts` — all server actions: createProof, addProofVersion, submitApproval, addComment, archiveProof, setProofInReview
@@ -103,9 +104,16 @@ A white-labeled client portal that gives each client a branded, private space to
 - Admin: per-client documents tab + upload page, global documents list; per-client tasks tab + new task page, global tasks list, task detail page
 - Client: documents list with download/external link; tasks list + detail with optional status update (controlled by allowClientUpdate flag)
 
-### Phase 6 — Not started
-- Budget tracker with line items
-- Analytics report embedding / external links
+### Phase 6 — Complete
+- `lib/actions/budget.ts` — createBudget, addLineItem, deleteLineItem, deleteBudget
+- `lib/actions/analytics.ts` — createReport, deleteReport, addMetric, deleteMetric
+- `components/budget/` — BudgetOverview, AddLineItemForm, LineItemRow
+- `components/analytics/` — AddReportForm, AddMetricForm, DeleteReportButton, DeleteMetricButton
+- Admin: per-client budget tab (create/manage) + global overview grid; per-client analytics tab + global list
+- Client: read-only budget with spend breakdown; analytics with iframe embed + manual metrics grid
+
+### Phase 7 — Not started
+- Performance, error handling, mobile responsiveness, deployment readiness
 
 ---
 
