@@ -5,8 +5,9 @@ import { StatCard } from "@/components/analytics/StatCard";
 import { ChartCard } from "@/components/analytics/ChartCard";
 import { AnalyticsTable } from "@/components/analytics/AnalyticsTable";
 import { EmptyState } from "@/components/shared/EmptyState";
-import { BarChart2, ExternalLink } from "lucide-react";
+import { BarChart2, ExternalLink, RefreshCw, AlertTriangle } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { formatRelativeTime } from "@/lib/utils";
 import type { MetricType } from "@prisma/client";
 
 // ── Helpers ──────────────────────────────────────────────────
@@ -48,7 +49,18 @@ export default async function ClientAnalyticsPage() {
   const session = await auth();
   const clientId = session!.user.clientIds?.[0];
 
-  const [dataPoints, upcomingTasks, reports] = await Promise.all([
+  const [client, dataPoints, upcomingTasks, reports] = await Promise.all([
+    clientId
+      ? prisma.client.findUnique({
+          where: { id: clientId },
+          select: {
+            analyticsMode: true,
+            googleSheetConfig: {
+              select: { lastSyncedAt: true, lastSyncError: true, syncedRowCount: true },
+            },
+          },
+        })
+      : Promise.resolve(null),
     clientId
       ? prisma.analyticsDataPoint.findMany({
           where: { clientId },
@@ -78,6 +90,9 @@ export default async function ClientAnalyticsPage() {
       : Promise.resolve([]),
   ]);
 
+  const analyticsMode = client?.analyticsMode ?? "MANUAL";
+  const sheetConfig = client?.googleSheetConfig ?? null;
+
   const hasAnyData = dataPoints.length > 0;
   const externalLinks = reports.filter((r) => r.reportType === "EXTERNAL_LINK" && r.reportUrl);
   const otherReports = reports.filter((r) => r.reportType !== "EXTERNAL_LINK");
@@ -104,15 +119,56 @@ export default async function ClientAnalyticsPage() {
     clientId: t.clientId,
   }));
 
+  const isEmpty = !hasAnyData && reports.length === 0 && externalLinks.length === 0;
+
   return (
     <div>
       <PageHeader title="Analytics" subtitle="Performance metrics and trends from Revel." />
 
-      {!hasAnyData && reports.length === 0 && externalLinks.length === 0 ? (
+      {/* ── Google Sheet sync status banner ── */}
+      {analyticsMode === "GOOGLE_SHEET" && sheetConfig && (
+        <div className="mb-6 space-y-2">
+          {sheetConfig.lastSyncError && (
+            <div className="flex items-start gap-2.5 px-4 py-3 bg-red-50 border border-red-200 rounded-xl text-sm">
+              <AlertTriangle className="h-4 w-4 text-[#ff6b6c] flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="font-medium text-[#ff6b6c]">Last sync failed</p>
+                <p className="text-xs text-[#8a8880] mt-0.5">{sheetConfig.lastSyncError}</p>
+                {hasAnyData && (
+                  <p className="text-xs text-[#8a8880] mt-0.5">Showing previously synced data below.</p>
+                )}
+              </div>
+            </div>
+          )}
+          {sheetConfig.lastSyncedAt && !sheetConfig.lastSyncError && (
+            <div className="flex items-center gap-1.5 text-xs text-[#8a8880]">
+              <RefreshCw className="h-3 w-3" />
+              Last synced from Google Sheets {formatRelativeTime(new Date(sheetConfig.lastSyncedAt))}
+              {sheetConfig.syncedRowCount !== null && (
+                <span className="text-[#cad1cc]">
+                  &nbsp;· {sheetConfig.syncedRowCount} data point{sheetConfig.syncedRowCount !== 1 ? "s" : ""}
+                </span>
+              )}
+            </div>
+          )}
+          {!sheetConfig.lastSyncedAt && (
+            <div className="flex items-center gap-1.5 text-xs text-[#8a8880]">
+              <RefreshCw className="h-3 w-3" />
+              Google Sheet connected — awaiting first sync by your Revel team.
+            </div>
+          )}
+        </div>
+      )}
+
+      {isEmpty ? (
         <EmptyState
           icon={BarChart2}
           title="No analytics data yet"
-          description="Your Revel team will populate this dashboard with performance metrics over time."
+          description={
+            analyticsMode === "GOOGLE_SHEET"
+              ? "Your Revel team has connected a Google Sheet. Data will appear after the first sync."
+              : "Your Revel team will populate this dashboard with performance metrics over time."
+          }
         />
       ) : (
         <div className="space-y-6">

@@ -66,6 +66,17 @@ enum MetricType {
   AVG_HOURS
 }
 
+enum AnalyticsMode {
+  MANUAL
+  GOOGLE_SHEET
+  LOOKER_STUDIO
+}
+
+enum DataPointSource {
+  MANUAL
+  GOOGLE_SHEET
+}
+
 // ─── USERS + AUTH ────────────────────────────────────────────
 
 model User {
@@ -112,15 +123,18 @@ model Client {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  brandSettings    ClientBrandSettings?
-  clientUsers      ClientUser[]
-  proofs           Proof[]
-  documents        Document[]
-  tasks            Task[]
-  budgets              Budget[]
-  analyticsReports     AnalyticsReport[]
-  analyticsDataPoints  AnalyticsDataPoint[]
-  activityLogs         ActivityLog[]
+  analyticsMode    AnalyticsMode        @default(MANUAL)
+
+  brandSettings       ClientBrandSettings?
+  googleSheetConfig   GoogleSheetConfig?
+  clientUsers         ClientUser[]
+  proofs              Proof[]
+  documents           Document[]
+  tasks               Task[]
+  budgets             Budget[]
+  analyticsReports    AnalyticsReport[]
+  analyticsDataPoints AnalyticsDataPoint[]
+  activityLogs        ActivityLog[]
 }
 
 model ClientUser {
@@ -327,20 +341,39 @@ model AnalyticsMetric {
 // ─── ANALYTICS DATA POINTS ───────────────────────────────────
 
 model AnalyticsDataPoint {
-  id          String     @id @default(cuid())
+  id          String          @id @default(cuid())
   clientId    String
   metricType  MetricType
   date        DateTime
   value       Float
   notes       String?
+  source      DataPointSource @default(MANUAL)
   createdById String
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
 
   client    Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
   createdBy User   @relation(fields: [createdById], references: [id], onDelete: Cascade)
 
   @@index([clientId, metricType, date])
+  @@index([clientId, source])
+}
+
+// ─── GOOGLE SHEET CONFIG ─────────────────────────────────────
+
+model GoogleSheetConfig {
+  id             String    @id @default(cuid())
+  clientId       String    @unique
+  spreadsheetId  String
+  sheetName      String    @default("Sheet1")
+  range          String?
+  lastSyncedAt   DateTime?
+  lastSyncError  String?
+  syncedRowCount Int?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  client Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
 }
 
 // ─── ACTIVITY LOG ────────────────────────────────────────────

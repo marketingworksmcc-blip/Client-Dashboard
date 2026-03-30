@@ -43,6 +43,10 @@ Edit `.env`:
 DATABASE_URL="postgresql://USER:PASSWORD@localhost:5432/revel_portal?schema=public"
 AUTH_SECRET="run: openssl rand -base64 32"
 NEXTAUTH_URL="http://localhost:3000"
+
+# Optional: Google Sheets integration (see section below)
+GOOGLE_SERVICE_ACCOUNT_EMAIL=""
+GOOGLE_PRIVATE_KEY=""
 ```
 
 ### 3. Create the database
@@ -85,6 +89,56 @@ Open [http://localhost:3000](http://localhost:3000).
 | Acme Co Admin | admin@acmeco.com | client-admin-2024 |
 | Acme Co User | user@acmeco.com | client-user-2024 |
 | Blue Harbor Admin | admin@blueharbor.com | client-admin-2024 |
+
+---
+
+## Google Sheets Integration
+
+The analytics module supports syncing data directly from a Google Sheet.
+
+### How it works
+
+1. Admin selects **Google Sheet** mode on a client's Analytics tab.
+2. Admin enters the `spreadsheetId`, sheet/tab name, and optional A1 range.
+3. The sheet must be shared with the service account email (Viewer access).
+4. Admin clicks **Sync Now** to pull data. Data is stored as `AnalyticsDataPoint` records and displayed on the client dashboard.
+5. A **Last synced** timestamp appears on the client analytics page.
+
+### Sheet format
+
+The first row must be a header row. Columns are case-insensitive and can appear in any order. Extra columns are ignored.
+
+| Date | New Leads | Tasks Created | Tasks Completed | Hours Worked | Clients Onboarded |
+|------|-----------|---------------|-----------------|--------------|-------------------|
+| 2024-01-15 | 12 | 8 | 5 | 40 | 3 |
+| 2024-02-15 | 18 | 11 | 9 | 38 | 2 |
+
+Accepted date formats: `YYYY-MM-DD`, `MM/DD/YYYY`, or natural language (`Jan 15, 2024`).
+
+### Setup: Service Account
+
+1. Go to [Google Cloud Console](https://console.cloud.google.com/) → **IAM & Admin** → **Service Accounts**.
+2. Create a new service account (e.g. `revel-sheets-reader`).
+3. On the service account, go to **Keys** → **Add Key** → **Create new key** → JSON.
+4. Download the JSON key file.
+5. Enable the **Google Sheets API** in your project under **APIs & Services**.
+6. Copy values into `.env`:
+
+```env
+GOOGLE_SERVICE_ACCOUNT_EMAIL="revel-sheets-reader@your-project.iam.gserviceaccount.com"
+# Paste the entire private_key value from the JSON file.
+# Use literal \n (backslash-n) for newlines — do NOT expand them.
+GOOGLE_PRIVATE_KEY="-----BEGIN RSA PRIVATE KEY-----\nMIIEow...\n-----END RSA PRIVATE KEY-----\n"
+```
+
+7. Share each Google Sheet with the service account email (Viewer access).
+   The service account email is shown in the admin Analytics tab for easy copy-paste.
+
+### Security notes
+
+- Credentials never leave the server. The Google Sheets API is called only in server actions.
+- The service account is granted **read-only** scope (`spreadsheets.readonly`).
+- Manual data points are preserved when switching to Google Sheet mode, and are never overwritten by a sync.
 
 ---
 
