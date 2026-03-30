@@ -9,7 +9,7 @@ interface PageHeaderProps {
 
 export function PageHeader({ title, subtitle, children, className }: PageHeaderProps) {
   return (
-    <div className={cn("flex items-start justify-between mb-6", className)}>
+    <div className={cn("flex flex-wrap items-start justify-between gap-y-3 mb-6", className)}>
       <div>
         <h1 className="font-heading text-xl font-semibold text-[#464540] tracking-tight">
           {title}

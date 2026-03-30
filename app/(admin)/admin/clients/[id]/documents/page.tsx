@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { DocumentStatusBadge } from "@/components/documents/DocumentStatusBadge";
 import { DeleteDocumentButton } from "@/components/documents/DeleteDocumentButton";
+import { EditDocumentForm } from "@/components/documents/EditDocumentForm";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { deleteDocument } from "@/lib/actions/documents";
 import { formatDate } from "@/lib/utils";
@@ -49,34 +50,45 @@ export default async function ClientDocumentsTab({ params }: { params: Promise<{
           {documents.map((doc) => {
             const deleteWithId = deleteDocument.bind(null, doc.id);
             return (
-              <div key={doc.id} className="flex items-center gap-4 px-5 py-4 bg-white hover:bg-[#faf9f6] transition-colors">
-                <div className="w-9 h-9 rounded-lg bg-blue-50 flex items-center justify-center flex-shrink-0">
-                  <FileText className="h-4 w-4 text-blue-600" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-[#464540] truncate">{doc.title}</p>
-                  <div className="flex items-center gap-3 mt-0.5">
-                    <span className="text-xs text-[#8a8880]">{formatDate(doc.createdAt)}</span>
-                    {doc.category && (
-                      <span className="text-xs text-[#8a8880]">{doc.category}</span>
-                    )}
+              <div key={doc.id} className="bg-white px-5 py-4 space-y-3">
+                <div className="flex items-center gap-4">
+                  <div className="w-9 h-9 rounded-lg bg-blue-50 flex items-center justify-center flex-shrink-0">
+                    <FileText className="h-4 w-4 text-blue-600" />
                   </div>
-                </div>
-                <div className="flex items-center gap-2 flex-shrink-0">
-                  <DocumentStatusBadge status={doc.status} />
-                  {doc.fileUrl && (
-                    <a href={doc.fileUrl} download
-                      className="inline-flex items-center justify-center h-8 w-8 rounded-md border border-[#e2e0d9] hover:bg-[#f0efe9] transition-colors">
-                      <Download className="h-4 w-4 text-[#8a8880]" />
-                    </a>
-                  )}
-                  {doc.externalUrl && (
-                    <a href={doc.externalUrl} target="_blank" rel="noopener noreferrer"
-                      className="inline-flex items-center justify-center h-8 w-8 rounded-md border border-[#e2e0d9] hover:bg-[#f0efe9] transition-colors">
-                      <ExternalLink className="h-4 w-4 text-[#8a8880]" />
-                    </a>
-                  )}
-                  <DeleteDocumentButton documentTitle={doc.title} deleteAction={deleteWithId} />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-[#464540] truncate">{doc.title}</p>
+                    <div className="flex items-center gap-3 mt-0.5">
+                      <span className="text-xs text-[#8a8880]">{formatDate(doc.createdAt)}</span>
+                      {doc.category && (
+                        <span className="text-xs text-[#8a8880]">{doc.category}</span>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    <DocumentStatusBadge status={doc.status} />
+                    {doc.fileUrl && (
+                      <a href={doc.fileUrl} download
+                        className="inline-flex items-center justify-center h-8 w-8 rounded-md border border-[#e2e0d9] hover:bg-[#f0efe9] transition-colors">
+                        <Download className="h-4 w-4 text-[#8a8880]" />
+                      </a>
+                    )}
+                    {doc.externalUrl && (
+                      <a href={doc.externalUrl} target="_blank" rel="noopener noreferrer"
+                        className="inline-flex items-center justify-center h-8 w-8 rounded-md border border-[#e2e0d9] hover:bg-[#f0efe9] transition-colors">
+                        <ExternalLink className="h-4 w-4 text-[#8a8880]" />
+                      </a>
+                    )}
+                    <EditDocumentForm
+                      documentId={doc.id}
+                      defaults={{
+                        title: doc.title,
+                        description: doc.description,
+                        category: doc.category,
+                        status: doc.status,
+                      }}
+                    />
+                    <DeleteDocumentButton documentTitle={doc.title} deleteAction={deleteWithId} />
+                  </div>
                 </div>
               </div>
             );

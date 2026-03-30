@@ -8,6 +8,7 @@ import { TaskPriorityBadge } from "@/components/tasks/TaskPriorityBadge";
 import { TaskNotes } from "@/components/tasks/TaskNotes";
 import { UpdateTaskStatus } from "@/components/tasks/UpdateTaskStatus";
 import { DeleteTaskButton } from "@/components/tasks/DeleteTaskButton";
+import { EditTaskForm } from "@/components/tasks/EditTaskForm";
 import { deleteTask } from "@/lib/actions/tasks";
 import { formatDate, formatRelativeTime } from "@/lib/utils";
 import { ArrowLeft, Building2, Calendar, User } from "lucide-react";
@@ -16,19 +17,26 @@ import Link from "next/link";
 export default async function AdminTaskDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
 
-  const task = await prisma.task.findUnique({
-    where: { id },
-    include: {
-      client: { select: { id: true, name: true } },
-      assignedTo: { select: { name: true } },
-      createdBy: { select: { name: true } },
-      notes: { orderBy: { createdAt: "asc" }, include: { user: { select: { name: true } } } },
-    },
-  });
+  const [task, clientUsers] = await Promise.all([
+    prisma.task.findUnique({
+      where: { id },
+      include: {
+        client: { select: { id: true, name: true } },
+        assignedTo: { select: { id: true, name: true } },
+        createdBy: { select: { name: true } },
+        notes: { orderBy: { createdAt: "asc" }, include: { user: { select: { name: true } } } },
+      },
+    }),
+    prisma.clientUser.findMany({
+      where: { client: { tasks: { some: { id } } } },
+      include: { user: { select: { id: true, name: true } } },
+    }),
+  ]);
 
   if (!task) notFound();
 
   const deleteWithId = deleteTask.bind(null, id);
+  const assignableUsers = clientUsers.map((cu) => ({ id: cu.user.id, name: cu.user.name }));
 
   return (
     <div>
@@ -101,6 +109,18 @@ export default async function AdminTaskDetailPage({ params }: { params: Promise<
                   Client can update status
                 </p>
               )}
+              <EditTaskForm
+                taskId={id}
+                assignableUsers={assignableUsers}
+                defaults={{
+                  title: task.title,
+                  description: task.description,
+                  priority: task.priority,
+                  dueDate: task.dueDate,
+                  assignedToId: task.assignedTo?.id ?? null,
+                  allowClientUpdate: task.allowClientUpdate,
+                }}
+              />
             </CardContent>
           </Card>
 

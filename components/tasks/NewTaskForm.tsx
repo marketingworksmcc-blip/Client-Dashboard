@@ -47,7 +47,7 @@ export function NewTaskForm({ clientId, assignableUsers }: NewTaskFormProps) {
           className="w-full rounded-lg border border-[#e2e0d9] bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#d3de2c] resize-none" />
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="space-y-1.5">
           <Label htmlFor="priority">Priority</Label>
           <select id="priority" name="priority" defaultValue="MEDIUM"

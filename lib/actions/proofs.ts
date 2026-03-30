@@ -271,6 +271,32 @@ export async function archiveProof(proofId: string) {
   redirect(`/admin/clients/${proof.clientId}/proofs`);
 }
 
+export async function updateProof(proofId: string, prevState: unknown, formData: FormData) {
+  await requireRevelUser();
+
+  const raw = {
+    title: formData.get("title") as string,
+    description: (formData.get("description") as string) || "",
+    dueDate: (formData.get("dueDate") as string) || "",
+  };
+
+  const schema = proofSchema.pick({ title: true, description: true, dueDate: true });
+  const parsed = schema.safeParse(raw);
+  if (!parsed.success) return { error: parsed.error.issues[0].message };
+
+  await prisma.proof.update({
+    where: { id: proofId },
+    data: {
+      title: parsed.data.title,
+      description: parsed.data.description || null,
+      dueDate: parsed.data.dueDate ? new Date(parsed.data.dueDate) : null,
+    },
+  });
+
+  revalidatePath(`/admin/proofs/${proofId}`);
+  return { success: true };
+}
+
 export async function setProofInReview(proofId: string) {
   await requireRevelUser();
   await prisma.proof.update({ where: { id: proofId }, data: { status: "IN_REVIEW" } });

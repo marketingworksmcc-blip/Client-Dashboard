@@ -105,6 +105,38 @@ export async function createDocument(clientId: string, prevState: unknown, formD
   redirect(`/admin/clients/${clientId}/documents`);
 }
 
+export async function updateDocument(documentId: string, prevState: unknown, formData: FormData) {
+  await requireRevelUser();
+
+  const doc = await prisma.document.findUnique({ where: { id: documentId } });
+  if (!doc) return { error: "Document not found." };
+
+  const raw = {
+    title: formData.get("title") as string,
+    description: (formData.get("description") as string) || "",
+    category: (formData.get("category") as string) || "",
+    status: (formData.get("status") as string) || "REFERENCE",
+    externalUrl: (formData.get("externalUrl") as string) || "",
+  };
+
+  const parsed = documentSchema.safeParse(raw);
+  if (!parsed.success) return { error: parsed.error.issues[0].message };
+
+  await prisma.document.update({
+    where: { id: documentId },
+    data: {
+      title: parsed.data.title,
+      description: parsed.data.description || null,
+      category: parsed.data.category || null,
+      status: parsed.data.status,
+    },
+  });
+
+  revalidatePath(`/admin/clients/${doc.clientId}/documents`);
+  revalidatePath(`/admin/documents`);
+  return { success: true };
+}
+
 export async function deleteDocument(documentId: string) {
   await requireRevelUser();
 

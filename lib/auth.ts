@@ -5,6 +5,7 @@ import bcrypt from "bcryptjs";
 import { z } from "zod";
 import type { Role } from "@prisma/client";
 
+
 const loginSchema = z.object({
   email: z.string().email(),
   password: z.string().min(1),
@@ -28,7 +29,17 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       if (token) {
         session.user.id = token.id as string;
         session.user.role = token.role as Role;
-        session.user.clientIds = token.clientIds as string[];
+        // Always refresh name + clientIds from DB so stale JWTs never show stale data
+        const user = await prisma.user.findUnique({
+          where: { id: token.id as string },
+          select: { name: true, clientUsers: { select: { clientId: true } } },
+        });
+        if (user) {
+          session.user.name = user.name;
+          session.user.clientIds = user.clientUsers.map((cu) => cu.clientId);
+        } else {
+          session.user.clientIds = token.clientIds as string[] ?? [];
+        }
       }
       return session;
     },

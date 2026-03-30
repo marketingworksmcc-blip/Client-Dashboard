@@ -18,7 +18,7 @@ export function AddMetricForm({ reportId }: { reportId: string }) {
   return (
     <form action={formAction} key={state?.success ? Date.now() : "metric"} className="space-y-3">
       {state?.error && <p className="text-xs text-[#ff6b6c]">{state.error}</p>}
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div className="space-y-1">
           <Label htmlFor="metricName" className="text-xs">Metric</Label>
           <Input id="metricName" name="metricName" placeholder="e.g. Impressions" required

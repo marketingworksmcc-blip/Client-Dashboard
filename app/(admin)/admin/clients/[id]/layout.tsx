@@ -28,7 +28,7 @@ export default async function ClientDetailLayout({
 
   return (
     <div>
-      <div className="flex items-start justify-between mb-1">
+      <div className="flex flex-wrap items-start justify-between gap-y-3 mb-1">
         <div className="flex items-center gap-3">
           <div
             className="w-10 h-10 rounded-xl flex items-center justify-center text-sm font-bold flex-shrink-0 text-[#263a2e]"

@@ -18,7 +18,7 @@ export function AddLineItemForm({ budgetId }: { budgetId: string }) {
   return (
     <form action={formAction} key={state?.success ? Date.now() : "lineitem"} className="space-y-3">
       {state?.error && <p className="text-xs text-[#ff6b6c]">{state.error}</p>}
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div className="space-y-1">
           <Label htmlFor="category" className="text-xs">Category</Label>
           <Input id="category" name="category" placeholder="e.g. Media Buy" required
@@ -30,7 +30,7 @@ export function AddLineItemForm({ budgetId }: { budgetId: string }) {
             className="border-[#e2e0d9] focus-visible:ring-[#d3de2c] h-8 text-sm" />
         </div>
       </div>
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div className="space-y-1">
           <Label htmlFor="description" className="text-xs">Description <span className="text-[#8a8880]">(optional)</span></Label>
           <Input id="description" name="description" placeholder="Details…"

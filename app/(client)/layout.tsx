@@ -1,23 +1,14 @@
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { isClientUser } from "@/lib/permissions";
-import { ClientSidebar } from "@/components/layout/ClientSidebar";
+import { ClientLayoutShell } from "@/components/layout/ClientLayoutShell";
 import { getClientBranding, REVEL_DEFAULTS } from "@/lib/branding";
 
-export default async function ClientLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default async function ClientLayout({ children }: { children: React.ReactNode }) {
   const session = await auth();
 
-  if (!session?.user) {
-    redirect("/login");
-  }
-
-  if (!isClientUser(session.user.role)) {
-    redirect("/admin/dashboard");
-  }
+  if (!session?.user) redirect("/login");
+  if (!isClientUser(session.user.role)) redirect("/admin/dashboard");
 
   const clientId = session.user.clientIds?.[0];
   const branding = clientId
@@ -35,7 +26,6 @@ export default async function ClientLayout({
 
   return (
     <div
-      className="flex h-screen overflow-hidden bg-[#faf9f6]"
       style={
         {
           "--brand-primary": branding.primaryColor,
@@ -43,16 +33,15 @@ export default async function ClientLayout({
         } as React.CSSProperties
       }
     >
-      <ClientSidebar
-        userName={session.user.name}
-        portalName={branding.portalName}
-        portalSubtitle={branding.portalSubtitle}
+      <ClientLayoutShell
+        userName={session.user.name ?? ""}
+        portalName={branding.portalName ?? REVEL_DEFAULTS.portalName}
+        portalSubtitle={branding.portalSubtitle ?? undefined}
         logoUrl={branding.logoUrl}
-        primaryColor={branding.primaryColor}
-      />
-      <main className="flex-1 overflow-y-auto">
-        <div className="max-w-5xl mx-auto px-6 py-8">{children}</div>
-      </main>
+        primaryColor={branding.primaryColor ?? REVEL_DEFAULTS.primaryColor}
+      >
+        {children}
+      </ClientLayoutShell>
     </div>
   );
 }

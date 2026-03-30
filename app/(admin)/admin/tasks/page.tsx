@@ -54,7 +54,7 @@ export default async function AdminTasksPage() {
                 </div>
               </div>
               <div className="flex items-center gap-2 flex-shrink-0">
-                <TaskPriorityBadge priority={task.priority} />
+                <span className="hidden sm:block"><TaskPriorityBadge priority={task.priority} /></span>
                 <TaskStatusBadge status={task.status} />
               </div>
             </Link>

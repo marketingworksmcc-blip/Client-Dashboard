@@ -92,6 +92,39 @@ export async function addMetric(reportId: string, prevState: unknown, formData: 
   });
 
   revalidatePath(`/admin/clients/${report.clientId}/analytics`);
+  revalidatePath(`/analytics`);
+  return { success: true };
+}
+
+export async function updateMetric(metricId: string, prevState: unknown, formData: FormData) {
+  await requireAdmin();
+
+  const metric = await prisma.analyticsMetric.findUnique({
+    where: { id: metricId },
+    include: { report: { select: { clientId: true } } },
+  });
+  if (!metric) return { error: "Metric not found." };
+
+  const raw = {
+    metricName: formData.get("metricName") as string,
+    metricValue: formData.get("metricValue") as string,
+    notes: (formData.get("notes") as string) || "",
+  };
+
+  const parsed = metricSchema.safeParse(raw);
+  if (!parsed.success) return { error: parsed.error.issues[0].message };
+
+  await prisma.analyticsMetric.update({
+    where: { id: metricId },
+    data: {
+      metricName: parsed.data.metricName,
+      metricValue: parsed.data.metricValue,
+      notes: parsed.data.notes || null,
+    },
+  });
+
+  revalidatePath(`/admin/clients/${metric.report.clientId}/analytics`);
+  revalidatePath(`/analytics`);
   return { success: true };
 }
 

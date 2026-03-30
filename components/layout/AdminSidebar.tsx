@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect } from "react";
 import { signOut } from "next-auth/react";
 import { cn } from "@/lib/utils";
 import {
@@ -16,6 +17,7 @@ import {
   Settings,
   LogOut,
   ChevronRight,
+  X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -34,38 +36,53 @@ interface AdminSidebarProps {
   userName: string;
   userEmail: string;
   userRole: string;
+  isOpen: boolean;
+  onClose: () => void;
 }
 
-export function AdminSidebar({ userName, userEmail, userRole }: AdminSidebarProps) {
+const roleLabel: Record<string, string> = {
+  SUPER_ADMIN: "Super Admin",
+  REVEL_ADMIN: "Admin",
+  REVEL_TEAM: "Team Member",
+};
+
+export function AdminSidebar({ userName, userEmail, userRole, isOpen, onClose }: AdminSidebarProps) {
   const pathname = usePathname();
 
-  const initials = userName
-    .split(" ")
-    .map((n) => n[0])
-    .join("")
-    .toUpperCase()
-    .slice(0, 2);
-
-  const roleLabel: Record<string, string> = {
-    SUPER_ADMIN: "Super Admin",
-    REVEL_ADMIN: "Admin",
-    REVEL_TEAM: "Team Member",
-  };
+  // Close sidebar on navigation (mobile)
+  useEffect(() => {
+    onClose();
+  }, [pathname]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
-    <aside className="w-64 flex-shrink-0 h-screen sticky top-0 flex flex-col bg-[#263a2e] border-r border-[#1e2e24]">
-      {/* Logo */}
+    <aside
+      className={cn(
+        "w-64 flex-shrink-0 flex flex-col bg-[#263a2e] border-r border-[#1e2e24]",
+        // Mobile: fixed overlay, slide in/out
+        "fixed inset-y-0 left-0 z-50 transition-transform duration-300 ease-in-out",
+        // Desktop: sticky, always visible
+        "lg:sticky lg:top-0 lg:h-screen lg:z-auto lg:translate-x-0",
+        // Mobile visibility
+        isOpen ? "translate-x-0 shadow-2xl" : "-translate-x-full"
+      )}
+    >
+      {/* Logo + close button */}
       <div className="px-5 py-5 border-b border-[#1e2e24]">
-        <div className="flex items-center gap-3">
-          <img src="/revel-icon.png" alt="Revel" className="w-8 h-8 rounded-lg object-cover flex-shrink-0" />
-          <div className="min-w-0">
-            <p className="text-[#ece9e1] font-semibold text-sm leading-tight truncate">
-              Revel
-            </p>
-            <p className="text-[#cad1cc] text-xs leading-tight opacity-70">
-              Admin Portal
-            </p>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3 min-w-0">
+            <img src="/revel-icon.png" alt="Revel" className="w-8 h-8 rounded-lg object-cover flex-shrink-0" />
+            <div className="min-w-0">
+              <p className="text-[#ece9e1] font-semibold text-sm leading-tight truncate">Revel</p>
+              <p className="text-[#cad1cc] text-xs leading-tight opacity-70">Admin Portal</p>
+            </div>
           </div>
+          {/* Close button — mobile only */}
+          <button
+            onClick={onClose}
+            className="lg:hidden text-[#cad1cc] hover:text-[#ece9e1] transition-colors p-1 flex-shrink-0"
+          >
+            <X className="h-4 w-4" />
+          </button>
         </div>
       </div>
 
@@ -95,9 +112,7 @@ export function AdminSidebar({ userName, userEmail, userRole }: AdminSidebarProp
                 )}
               />
               {item.label}
-              {isActive && (
-                <ChevronRight className="h-3 w-3 ml-auto text-[#d3de2c] opacity-60" />
-              )}
+              {isActive && <ChevronRight className="h-3 w-3 ml-auto text-[#d3de2c] opacity-60" />}
             </Link>
           );
         })}
@@ -122,13 +137,10 @@ export function AdminSidebar({ userName, userEmail, userRole }: AdminSidebarProp
           <img src="/revel-icon.png" alt="Revel" className="h-7 w-7 rounded-full object-cover flex-shrink-0" />
           <div className="flex-1 min-w-0">
             <p className="text-[#ece9e1] text-xs font-medium truncate">{userName}</p>
-            <p className="text-[#cad1cc] text-xs opacity-60 truncate">
-              {roleLabel[userRole] ?? userRole}
-            </p>
+            <p className="text-[#cad1cc] text-xs opacity-60 truncate">{roleLabel[userRole] ?? userRole}</p>
           </div>
           <Button
-            variant="ghost"
-            size="icon"
+            variant="ghost" size="icon"
             className="h-6 w-6 text-[#cad1cc] hover:text-[#ff6b6c] hover:bg-transparent flex-shrink-0"
             onClick={() => signOut({ callbackUrl: "/login" })}
             title="Sign out"

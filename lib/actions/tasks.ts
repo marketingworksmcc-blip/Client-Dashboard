@@ -122,6 +122,41 @@ export async function addTaskNote(taskId: string, prevState: unknown, formData: 
   return { success: true };
 }
 
+export async function updateTask(taskId: string, prevState: unknown, formData: FormData) {
+  await requireRevelUser();
+
+  const task = await prisma.task.findUnique({ where: { id: taskId } });
+  if (!task) return { error: "Task not found." };
+
+  const raw = {
+    title: formData.get("title") as string,
+    description: (formData.get("description") as string) || "",
+    priority: (formData.get("priority") as string) || "MEDIUM",
+    dueDate: (formData.get("dueDate") as string) || "",
+    assignedToId: (formData.get("assignedToId") as string) || "",
+    allowClientUpdate: formData.get("allowClientUpdate") === "on",
+  };
+
+  const parsed = taskSchema.safeParse(raw);
+  if (!parsed.success) return { error: parsed.error.issues[0].message };
+
+  await prisma.task.update({
+    where: { id: taskId },
+    data: {
+      title: parsed.data.title,
+      description: parsed.data.description || null,
+      priority: parsed.data.priority,
+      dueDate: parsed.data.dueDate ? new Date(parsed.data.dueDate) : null,
+      assignedToId: parsed.data.assignedToId || null,
+      allowClientUpdate: parsed.data.allowClientUpdate,
+    },
+  });
+
+  revalidatePath(`/admin/tasks/${taskId}`);
+  revalidatePath(`/admin/clients/${task.clientId}/tasks`);
+  return { success: true };
+}
+
 export async function deleteTask(taskId: string) {
   const session = await requireRevelUser();
 

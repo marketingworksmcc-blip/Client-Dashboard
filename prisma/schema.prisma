@@ -57,6 +57,15 @@ enum ReportType {
   MANUAL
 }
 
+enum MetricType {
+  CLIENTS_ONBOARDED
+  TOTAL_CLIENTS
+  NEW_LEADS
+  TASKS_CREATED
+  TASKS_COMPLETED
+  AVG_HOURS
+}
+
 // ─── USERS + AUTH ────────────────────────────────────────────
 
 model User {
@@ -77,8 +86,9 @@ model User {
   assignedTasks       Task[]               @relation("TaskAssignee")
   createdTasks        Task[]               @relation("TaskCreatedBy")
   taskNotes           TaskNote[]
-  activityLogs        ActivityLog[]
-  passwordResetTokens PasswordResetToken[]
+  activityLogs         ActivityLog[]
+  passwordResetTokens  PasswordResetToken[]
+  analyticsDataPoints  AnalyticsDataPoint[]
 }
 
 model PasswordResetToken {
@@ -107,9 +117,10 @@ model Client {
   proofs           Proof[]
   documents        Document[]
   tasks            Task[]
-  budgets          Budget[]
-  analyticsReports AnalyticsReport[]
-  activityLogs     ActivityLog[]
+  budgets              Budget[]
+  analyticsReports     AnalyticsReport[]
+  analyticsDataPoints  AnalyticsDataPoint[]
+  activityLogs         ActivityLog[]
 }
 
 model ClientUser {
@@ -311,6 +322,25 @@ model AnalyticsMetric {
   createdAt   DateTime  @default(now())
 
   report AnalyticsReport @relation(fields: [reportId], references: [id], onDelete: Cascade)
+}
+
+// ─── ANALYTICS DATA POINTS ───────────────────────────────────
+
+model AnalyticsDataPoint {
+  id          String     @id @default(cuid())
+  clientId    String
+  metricType  MetricType
+  date        DateTime
+  value       Float
+  notes       String?
+  createdById String
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  client    Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  createdBy User   @relation(fields: [createdById], references: [id], onDelete: Cascade)
+
+  @@index([clientId, metricType, date])
 }
 
 // ─── ACTIVITY LOG ────────────────────────────────────────────

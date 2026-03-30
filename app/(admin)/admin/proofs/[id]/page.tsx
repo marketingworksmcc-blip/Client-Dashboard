@@ -12,6 +12,7 @@ import { formatDate, formatRelativeTime } from "@/lib/utils";
 import { archiveProof, setProofInReview, deleteProof } from "@/lib/actions/proofs";
 import { ArrowLeft, Building2, Calendar, Layers, CheckCircle, XCircle } from "lucide-react";
 import { DeleteProofButton } from "@/components/proofs/DeleteProofButton";
+import { EditProofForm } from "@/components/proofs/EditProofForm";
 import Link from "next/link";
 
 export default async function AdminProofDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -130,9 +131,11 @@ export default async function AdminProofDetailPage({ params }: { params: Promise
                   <span>Due {formatDate(proof.dueDate)}</span>
                 </div>
               )}
-              <div className="pt-1">
-                <p className="text-xs text-[#8a8880]">Created {formatDate(proof.createdAt)}</p>
-              </div>
+              <p className="text-xs text-[#8a8880]">Created {formatDate(proof.createdAt)}</p>
+              <EditProofForm
+                proofId={id}
+                defaults={{ title: proof.title, description: proof.description, dueDate: proof.dueDate }}
+              />
             </CardContent>
           </Card>
 
