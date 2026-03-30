@@ -6,41 +6,26 @@ import { ChartCard } from "@/components/analytics/ChartCard";
 import { AnalyticsTable } from "@/components/analytics/AnalyticsTable";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { BarChart2, ExternalLink, RefreshCw, AlertTriangle } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatRelativeTime } from "@/lib/utils";
-import type { MetricType } from "@prisma/client";
 
 // ── Helpers ──────────────────────────────────────────────────
 
-function computeStat(
-  metricType: MetricType,
-  allPoints: { metricType: MetricType; date: Date | string; value: number }[]
-) {
+function computeStat(dataPoints: { date: Date | string; value: number }[]) {
   const now = new Date();
   const thirtyDaysAgo = new Date(now);
   thirtyDaysAgo.setDate(now.getDate() - 30);
   const sixtyDaysAgo = new Date(now);
   sixtyDaysAgo.setDate(now.getDate() - 60);
 
-  const forMetric = allPoints.filter((p) => p.metricType === metricType);
-  const current = forMetric
+  const current = dataPoints
     .filter((p) => new Date(p.date) >= thirtyDaysAgo)
     .reduce((s, p) => s + p.value, 0);
-  const previous = forMetric
+  const previous = dataPoints
     .filter((p) => new Date(p.date) >= sixtyDaysAgo && new Date(p.date) < thirtyDaysAgo)
     .reduce((s, p) => s + p.value, 0);
 
   const change = previous === 0 ? null : ((current - previous) / previous) * 100;
   return { value: current, change };
-}
-
-function toChartData(
-  allPoints: { metricType: MetricType; date: Date | string; value: number }[],
-  metricType: MetricType
-) {
-  return allPoints
-    .filter((p) => p.metricType === metricType)
-    .map((p) => ({ date: new Date(p.date).toISOString(), value: p.value }));
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -49,7 +34,7 @@ export default async function ClientAnalyticsPage() {
   const session = await auth();
   const clientId = session!.user.clientIds?.[0];
 
-  const [client, dataPoints, upcomingTasks, reports] = await Promise.all([
+  const [client, clientMetrics, upcomingTasks, reports] = await Promise.all([
     clientId
       ? prisma.client.findUnique({
           where: { id: clientId },
@@ -62,9 +47,10 @@ export default async function ClientAnalyticsPage() {
         })
       : Promise.resolve(null),
     clientId
-      ? prisma.analyticsDataPoint.findMany({
+      ? prisma.clientMetric.findMany({
           where: { clientId },
-          orderBy: { date: "asc" },
+          orderBy: { sortOrder: "asc" },
+          include: { dataPoints: { orderBy: { date: "asc" } } },
         })
       : Promise.resolve([]),
     clientId
@@ -93,22 +79,13 @@ export default async function ClientAnalyticsPage() {
   const analyticsMode = client?.analyticsMode ?? "MANUAL";
   const sheetConfig = client?.googleSheetConfig ?? null;
 
-  const hasAnyData = dataPoints.length > 0;
+  const cardMetrics = clientMetrics.filter((m) => m.showAsCard);
+  const chartMetrics = clientMetrics.filter((m) => m.showAsChart);
+  const hasMetricData = clientMetrics.some((m) => m.dataPoints.length > 0);
+
   const externalLinks = reports.filter((r) => r.reportType === "EXTERNAL_LINK" && r.reportUrl);
   const otherReports = reports.filter((r) => r.reportType !== "EXTERNAL_LINK");
 
-  // Summary stats
-  const onboarded = computeStat("CLIENTS_ONBOARDED", dataPoints);
-  const totalClients = computeStat("TOTAL_CLIENTS", dataPoints);
-  const newLeads = computeStat("NEW_LEADS", dataPoints);
-  const avgHours = computeStat("AVG_HOURS", dataPoints);
-
-  // Chart data (serialize dates)
-  const tasksCreatedData = toChartData(dataPoints, "TASKS_CREATED");
-  const tasksCompletedData = toChartData(dataPoints, "TASKS_COMPLETED");
-  const newLeadsData = toChartData(dataPoints, "NEW_LEADS");
-
-  // Upcoming tasks
   const taskRows = upcomingTasks.map((t) => ({
     id: t.id,
     title: t.title,
@@ -119,7 +96,7 @@ export default async function ClientAnalyticsPage() {
     clientId: t.clientId,
   }));
 
-  const isEmpty = !hasAnyData && reports.length === 0 && externalLinks.length === 0;
+  const isEmpty = !hasMetricData && reports.length === 0 && externalLinks.length === 0;
 
   return (
     <div>
@@ -134,7 +111,7 @@ export default async function ClientAnalyticsPage() {
               <div>
                 <p className="font-medium text-[#ff6b6c]">Last sync failed</p>
                 <p className="text-xs text-[#8a8880] mt-0.5">{sheetConfig.lastSyncError}</p>
-                {hasAnyData && (
+                {hasMetricData && (
                   <p className="text-xs text-[#8a8880] mt-0.5">Showing previously synced data below.</p>
                 )}
               </div>
@@ -190,62 +167,47 @@ export default async function ClientAnalyticsPage() {
             </div>
           )}
 
-          {/* ── Row 1: Summary stat cards ── */}
-          {hasAnyData && (
+          {/* ── Summary stat cards ── */}
+          {cardMetrics.length > 0 && (
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-              <StatCard
-                label="Clients Onboarded"
-                value={onboarded.value.toLocaleString()}
-                change={onboarded.change}
-                changeLabel="vs last month"
-              />
-              <StatCard
-                label="Total Clients"
-                value={totalClients.value.toLocaleString()}
-                change={totalClients.change}
-                changeLabel="vs last month"
-              />
-              <StatCard
-                label="New Leads"
-                value={newLeads.value.toLocaleString()}
-                change={newLeads.change}
-                changeLabel="vs last month"
-              />
-              <StatCard
-                label="Avg Working Hours"
-                value={avgHours.value.toLocaleString()}
-                change={avgHours.change}
-                changeLabel="vs last month"
-                suffix="hrs"
-              />
+              {cardMetrics.map((m) => {
+                const stat = computeStat(m.dataPoints);
+                return (
+                  <StatCard
+                    key={m.id}
+                    label={m.name}
+                    value={stat.value.toLocaleString()}
+                    change={stat.change}
+                    changeLabel="vs last month"
+                  />
+                );
+              })}
             </div>
           )}
 
-          {/* ── Row 2: Charts ── */}
-          {(tasksCreatedData.length > 0 || tasksCompletedData.length > 0) && (
+          {/* ── Charts ── */}
+          {chartMetrics.filter((m) => m.dataPoints.length > 0).length > 0 && (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              <ChartCard
-                title="New Tasks Created"
-                data={tasksCreatedData}
-                color="#263a2e"
-              />
-              <ChartCard
-                title="Tasks Completed"
-                data={tasksCompletedData}
-                color="#3d6b52"
-              />
+              {chartMetrics
+                .filter((m) => m.dataPoints.length > 0)
+                .map((m) => (
+                  <ChartCard
+                    key={m.id}
+                    title={m.name}
+                    data={m.dataPoints.map((dp) => ({
+                      date: dp.date.toISOString(),
+                      value: dp.value,
+                    }))}
+                    color={m.color}
+                  />
+                ))}
             </div>
           )}
 
-          {/* ── Row 3: Table + New Leads chart ── */}
-          {(upcomingTasks.length > 0 || newLeadsData.length > 0) && (
+          {/* ── Upcoming tasks table ── */}
+          {upcomingTasks.length > 0 && (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               <AnalyticsTable tasks={taskRows} viewAllHref="/tasks" />
-              <ChartCard
-                title="New Leads"
-                data={newLeadsData}
-                color="#d3de2c"
-              />
             </div>
           )}
 
@@ -266,21 +228,21 @@ export default async function ClientAnalyticsPage() {
                     {report.reportType === "MANUAL" && report.metrics.length > 0 && (
                       <div className="border border-[#e2e0d9] rounded-xl overflow-hidden">
                         <div className="overflow-x-auto">
-                        <div className="grid grid-cols-[2fr_1fr_2fr] min-w-[360px] bg-[#f0efe9] px-4 py-2.5 border-b border-[#e2e0d9]">
-                          <span className="text-xs font-semibold text-[#8a8880] uppercase tracking-wide">Metric</span>
-                          <span className="text-xs font-semibold text-[#8a8880] uppercase tracking-wide">Value</span>
-                          <span className="text-xs font-semibold text-[#8a8880] uppercase tracking-wide">Notes</span>
+                          <div className="grid grid-cols-[2fr_1fr_2fr] min-w-[360px] bg-[#f0efe9] px-4 py-2.5 border-b border-[#e2e0d9]">
+                            <span className="text-xs font-semibold text-[#8a8880] uppercase tracking-wide">Metric</span>
+                            <span className="text-xs font-semibold text-[#8a8880] uppercase tracking-wide">Value</span>
+                            <span className="text-xs font-semibold text-[#8a8880] uppercase tracking-wide">Notes</span>
+                          </div>
+                          <div className="divide-y divide-[#f0efe9] bg-white">
+                            {report.metrics.map((m) => (
+                              <div key={m.id} className="grid grid-cols-[2fr_1fr_2fr] min-w-[360px] gap-2 px-4 py-3 items-center">
+                                <span className="text-sm text-[#464540] font-medium">{m.metricName}</span>
+                                <span className="text-sm font-semibold text-[#263a2e] tabular-nums">{m.metricValue}</span>
+                                <span className="text-xs text-[#8a8880]">{m.notes ?? ""}</span>
+                              </div>
+                            ))}
+                          </div>
                         </div>
-                        <div className="divide-y divide-[#f0efe9] bg-white">
-                          {report.metrics.map((m) => (
-                            <div key={m.id} className="grid grid-cols-[2fr_1fr_2fr] min-w-[360px] gap-2 px-4 py-3 items-center">
-                              <span className="text-sm text-[#464540] font-medium">{m.metricName}</span>
-                              <span className="text-sm font-semibold text-[#263a2e] tabular-nums">{m.metricValue}</span>
-                              <span className="text-xs text-[#8a8880]">{m.notes ?? ""}</span>
-                            </div>
-                          ))}
-                        </div>
-                        </div>{/* end overflow-x-auto */}
                       </div>
                     )}
                     {report.reportType === "MANUAL" && report.metrics.length === 0 && (

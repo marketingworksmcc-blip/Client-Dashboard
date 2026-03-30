@@ -99,7 +99,8 @@ model User {
   taskNotes           TaskNote[]
   activityLogs         ActivityLog[]
   passwordResetTokens  PasswordResetToken[]
-  analyticsDataPoints  AnalyticsDataPoint[]
+  analyticsDataPoints    AnalyticsDataPoint[]
+  clientMetricDataPoints ClientMetricDataPoint[]
 }
 
 model PasswordResetToken {
@@ -134,6 +135,7 @@ model Client {
   budgets             Budget[]
   analyticsReports    AnalyticsReport[]
   analyticsDataPoints AnalyticsDataPoint[]
+  clientMetrics       ClientMetric[]
   activityLogs        ActivityLog[]
 }
 
@@ -338,7 +340,43 @@ model AnalyticsMetric {
   report AnalyticsReport @relation(fields: [reportId], references: [id], onDelete: Cascade)
 }
 
-// ─── ANALYTICS DATA POINTS ───────────────────────────────────
+// ─── CUSTOM CLIENT METRICS ───────────────────────────────────
+
+model ClientMetric {
+  id          String   @id @default(cuid())
+  clientId    String
+  name        String
+  color       String   @default("#263a2e")
+  showAsCard  Boolean  @default(true)
+  showAsChart Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  client     Client                  @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  dataPoints ClientMetricDataPoint[]
+
+  @@index([clientId, sortOrder])
+}
+
+model ClientMetricDataPoint {
+  id          String          @id @default(cuid())
+  metricId    String
+  date        DateTime
+  value       Float
+  notes       String?
+  source      DataPointSource @default(MANUAL)
+  createdById String
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  metric    ClientMetric @relation(fields: [metricId], references: [id], onDelete: Cascade)
+  createdBy User         @relation(fields: [createdById], references: [id], onDelete: Cascade)
+
+  @@index([metricId, date])
+}
+
+// ─── ANALYTICS DATA POINTS (legacy) ──────────────────────────
 
 model AnalyticsDataPoint {
   id          String          @id @default(cuid())
