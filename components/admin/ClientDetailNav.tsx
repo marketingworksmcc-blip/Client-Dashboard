@@ -25,7 +25,8 @@ export function ClientDetailNav({ clientId }: ClientDetailNavProps) {
   ];
 
   return (
-    <div className="flex items-center gap-0.5 border-b border-[#e2e0d9] mt-5 -mx-0 overflow-x-auto">
+    <div className="relative mt-5">
+      <div className="flex items-center gap-0.5 border-b border-[#e2e0d9] overflow-x-auto scrollbar-hide">
       {tabs.map((tab) => {
         const isActive = pathname === tab.href;
         return (
@@ -33,7 +34,7 @@ export function ClientDetailNav({ clientId }: ClientDetailNavProps) {
             key={tab.href}
             href={tab.href}
             className={cn(
-              "px-4 py-2.5 text-sm font-medium whitespace-nowrap border-b-2 transition-colors",
+              "px-3 py-2.5 text-sm font-medium whitespace-nowrap border-b-2 transition-colors",
               isActive
                 ? "border-[#263a2e] text-[#263a2e]"
                 : "border-transparent text-[#8a8880] hover:text-[#464540] hover:border-[#e2e0d9]"
@@ -43,6 +44,7 @@ export function ClientDetailNav({ clientId }: ClientDetailNavProps) {
           </Link>
         );
       })}
+      </div>
     </div>
   );
 }

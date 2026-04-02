@@ -174,3 +174,12 @@
 .nav-item-active svg {
   color: #d3de2c;
 }
+
+/* Hide scrollbars while keeping scroll functionality */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}

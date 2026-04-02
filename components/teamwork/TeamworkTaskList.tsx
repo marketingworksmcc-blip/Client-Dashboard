@@ -27,12 +27,12 @@ function isOverdue(d: string | null): boolean {
   return date < new Date(new Date().toDateString());
 }
 
-export function TeamworkTaskList({ tasks }: { tasks: TWTask[] }) {
+export function TeamworkTaskList({ tasks, title = "Teamwork Tasks" }: { tasks: TWTask[]; title?: string }) {
   if (tasks.length === 0) {
     return (
       <Card className="border-[#e2e0d9]">
         <CardHeader className="pb-3">
-          <CardTitle>Upcoming Tasks</CardTitle>
+          <CardTitle>{title}</CardTitle>
         </CardHeader>
         <CardContent>
           <p className="text-sm text-[#8a8880] py-2">No open tasks — all caught up!</p>
@@ -45,7 +45,7 @@ export function TeamworkTaskList({ tasks }: { tasks: TWTask[] }) {
     <Card className="border-[#e2e0d9]">
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
-          <CardTitle>Upcoming Tasks</CardTitle>
+          <CardTitle>{title}</CardTitle>
           <span className="text-xs text-[#8a8880]">{tasks.length} open</span>
         </div>
       </CardHeader>
