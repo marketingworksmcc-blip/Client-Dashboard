@@ -124,20 +124,14 @@ export async function fetchTaskLists(domain: string, projectId: string): Promise
   const taskCounts = await Promise.all(
     lists.map(async (tl) => {
       const id = String(tl.id ?? "");
-      // Fetch active and completed tasks in parallel for this list
-      const [activeData, completedData] = await Promise.all([
-        twFetch<{ "todo-items"?: Record<string, unknown>[] }>(
-          domain,
-          `/tasklists/${id}/tasks.json`
-        ),
-        twFetch<{ "todo-items"?: Record<string, unknown>[] }>(
-          domain,
-          `/tasklists/${id}/tasks.json?status=completed`
-        ),
-      ]);
-      const active    = (activeData["todo-items"]    ?? []).length;
-      const completed = (completedData["todo-items"] ?? []).length;
-      return { id, total: active + completed, completed };
+      const data = await twFetch<{ "todo-items"?: Record<string, unknown>[] }>(
+        domain,
+        `/tasklists/${id}/tasks.json?includeCompletedTasks=true`
+      );
+      const items     = data["todo-items"] ?? [];
+      const total     = items.length;
+      const completed = items.filter((t) => Boolean(t.completed)).length;
+      return { id, total, completed };
     })
   );
 
