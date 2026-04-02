@@ -4,7 +4,8 @@ import { MetricsManager } from "@/components/analytics/MetricsManager";
 import { CollapsibleCard } from "@/components/ui/CollapsibleCard";
 import { ReportLinksManager } from "@/components/analytics/ReportLinksManager";
 import { AnalyticsDataGrid, type GridMetric, type GridRow } from "@/components/analytics/AnalyticsDataGrid";
-import { ExternalApiConfigForm } from "@/components/analytics/ExternalApiConfigForm";
+import { FunnelConfigForm } from "@/components/analytics/FunnelConfigForm";
+import { FunnelChannelPieChart } from "@/components/analytics/FunnelChannelPieChart";
 import { GA4ConfigForm } from "@/components/analytics/GA4ConfigForm";
 import { StatCard } from "@/components/analytics/StatCard";
 import { ChartCard } from "@/components/analytics/ChartCard";
@@ -20,7 +21,7 @@ import type { MetaMetricMapping, CampaignDataPoint } from "@/lib/actions/meta";
 import type { GoogleAdsMetricMapping, AdsCampaignDataPoint } from "@/lib/actions/googleAds";
 import Link from "next/link";
 import { LayoutDashboard, Table2, Eye, ExternalLink, BarChart2 } from "lucide-react";
-import type { ApiFieldMapping } from "@/lib/actions/externalMetricApi";
+import type { FunnelMetricMapping, FunnelChannelDataPoint } from "@/lib/actions/funnel";
 import type { GA4MetricMapping } from "@/lib/actions/ga4";
 
 function computeStat(dataPoints: { date: Date | string; value: number }[]) {
@@ -56,7 +57,7 @@ export default async function ClientAnalyticsTab({
   const isGrid = view === "grid";
   const isClientView = view === "client";
 
-  const [externalReports, metrics, externalApiConfig, ga4Config, metaConfig, googleAdsConfig, allReports, upcomingTasks] =
+  const [externalReports, metrics, funnelConfig, ga4Config, metaConfig, googleAdsConfig, allReports, upcomingTasks] =
     await Promise.all([
       prisma.analyticsReport.findMany({
         where: { clientId: id, isActive: true, reportType: "EXTERNAL_LINK" },
@@ -67,7 +68,7 @@ export default async function ClientAnalyticsTab({
         orderBy: { sortOrder: "asc" },
         include: { dataPoints: { orderBy: { date: "asc" } } },
       }),
-      prisma.externalMetricApi.findUnique({ where: { clientId: id } }),
+      prisma.funnelConfig.findUnique({ where: { clientId: id } }),
       prisma.gA4Config.findUnique({ where: { clientId: id } }),
       prisma.metaConfig.findUnique({ where: { clientId: id } }),
       prisma.googleAdsConfig.findUnique({ where: { clientId: id } }),
@@ -129,6 +130,9 @@ export default async function ClientAnalyticsTab({
   const keyEventName = ga4Config?.keyEventName ?? null;
   const metaCampaignData = (metaConfig?.campaignData ?? []) as unknown as CampaignDataPoint[];
   const googleAdsCampaignData = (googleAdsConfig?.campaignData ?? []) as unknown as AdsCampaignDataPoint[];
+  const funnelChannelData = (funnelConfig?.enabled && funnelConfig?.channelData
+    ? funnelConfig.channelData
+    : []) as unknown as FunnelChannelDataPoint[];
   const taskRows = upcomingTasks.map((t) => ({
     id: t.id,
     title: t.title,
@@ -258,7 +262,8 @@ export default async function ClientAnalyticsTab({
               {(chartMetrics.filter((m) => m.dataPoints.length > 0).length > 0 ||
                 (keyEventName && keyEventsData.length > 0) ||
                 metaCampaignData.length > 0 ||
-                googleAdsCampaignData.length > 0) && (
+                googleAdsCampaignData.length > 0 ||
+                funnelChannelData.length > 0) && (
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                   {chartMetrics
                     .filter((m) => m.dataPoints.length > 0)
@@ -281,6 +286,9 @@ export default async function ClientAnalyticsTab({
                   )}
                   {googleAdsCampaignData.length > 0 && (
                     <GoogleAdsCampaignPieChart data={googleAdsCampaignData} />
+                  )}
+                  {funnelChannelData.length > 0 && (
+                    <FunnelChannelPieChart data={funnelChannelData} />
                   )}
                 </div>
               )}
@@ -415,24 +423,22 @@ export default async function ClientAnalyticsTab({
           </CollapsibleCard>
 
           <CollapsibleCard
-            title="External API Connection"
-            description="Connect any REST API to automatically pull metric values. Synced values are written as data points for today's date."
+            title="Funnel.io"
+            description="Connect a Funnel.io account to sync aggregated marketing metrics and channel spend breakdown."
             defaultOpen={false}
           >
-            <ExternalApiConfigForm
+            <FunnelConfigForm
               clientId={id}
               metrics={metrics.map((m) => ({ id: m.id, name: m.name }))}
               config={
-                externalApiConfig
+                funnelConfig
                   ? {
-                      enabled: externalApiConfig.enabled,
-                      apiUrl: externalApiConfig.apiUrl,
-                      authType: externalApiConfig.authType,
-                      apiKey: externalApiConfig.apiKey,
-                      headerName: externalApiConfig.headerName,
-                      mappings: externalApiConfig.mappings as unknown as ApiFieldMapping[],
-                      lastSyncedAt: externalApiConfig.lastSyncedAt?.toISOString() ?? null,
-                      lastSyncError: externalApiConfig.lastSyncError,
+                      enabled: funnelConfig.enabled,
+                      apiKey: funnelConfig.apiKey,
+                      accountId: funnelConfig.accountId,
+                      mappings: funnelConfig.mappings as unknown as FunnelMetricMapping[],
+                      lastSyncedAt: funnelConfig.lastSyncedAt?.toISOString() ?? null,
+                      lastSyncError: funnelConfig.lastSyncError,
                     }
                   : null
               }

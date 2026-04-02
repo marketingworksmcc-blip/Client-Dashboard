@@ -6,11 +6,13 @@ import { ChartCard } from "@/components/analytics/ChartCard";
 import { KeyEventsPieChart } from "@/components/analytics/KeyEventsPieChart";
 import { MetaCampaignPieChart } from "@/components/analytics/MetaCampaignPieChart";
 import { GoogleAdsCampaignPieChart } from "@/components/analytics/GoogleAdsCampaignPieChart";
+import { FunnelChannelPieChart } from "@/components/analytics/FunnelChannelPieChart";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { BarChart2, ExternalLink, RefreshCw, AlertTriangle } from "lucide-react";
 import type { KeyEventSource } from "@/lib/actions/ga4";
 import type { CampaignDataPoint } from "@/lib/actions/meta";
 import type { AdsCampaignDataPoint } from "@/lib/actions/googleAds";
+import type { FunnelChannelDataPoint } from "@/lib/actions/funnel";
 import { formatRelativeTime } from "@/lib/utils";
 
 // ── Helpers ──────────────────────────────────────────────────
@@ -39,7 +41,7 @@ export default async function ClientAnalyticsPage() {
   const session = await auth();
   const clientId = session!.user.clientIds?.[0];
 
-  const [client, clientMetrics, reports, ga4Config, metaConfig, googleAdsConfig] = await Promise.all([
+  const [client, clientMetrics, reports, ga4Config, metaConfig, googleAdsConfig, funnelConfig] = await Promise.all([
     clientId
       ? prisma.client.findUnique({
           where: { id: clientId },
@@ -83,6 +85,12 @@ export default async function ClientAnalyticsPage() {
           select: { campaignData: true, enabled: true },
         })
       : Promise.resolve(null),
+    clientId
+      ? prisma.funnelConfig.findUnique({
+          where: { clientId },
+          select: { channelData: true, enabled: true },
+        })
+      : Promise.resolve(null),
   ]);
 
   const analyticsMode = client?.analyticsMode ?? "MANUAL";
@@ -97,6 +105,9 @@ export default async function ClientAnalyticsPage() {
   const googleAdsCampaignData = (googleAdsConfig?.enabled && googleAdsConfig?.campaignData
     ? googleAdsConfig.campaignData
     : []) as unknown as AdsCampaignDataPoint[];
+  const funnelChannelData = (funnelConfig?.enabled && funnelConfig?.channelData
+    ? funnelConfig.channelData
+    : []) as unknown as FunnelChannelDataPoint[];
 
   const cardMetrics = clientMetrics.filter((m) => m.showAsCard);
   const chartMetrics = clientMetrics.filter((m) => m.showAsChart);
@@ -197,7 +208,8 @@ export default async function ClientAnalyticsPage() {
           {(chartMetrics.filter((m) => m.dataPoints.length > 0).length > 0 ||
             (keyEventName && keyEventsData.length > 0) ||
             metaCampaignData.length > 0 ||
-            googleAdsCampaignData.length > 0) && (
+            googleAdsCampaignData.length > 0 ||
+            funnelChannelData.length > 0) && (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               {chartMetrics
                 .filter((m) => m.dataPoints.length > 0)
@@ -220,6 +232,9 @@ export default async function ClientAnalyticsPage() {
               )}
               {googleAdsCampaignData.length > 0 && (
                 <GoogleAdsCampaignPieChart data={googleAdsCampaignData} />
+              )}
+              {funnelChannelData.length > 0 && (
+                <FunnelChannelPieChart data={funnelChannelData} />
               )}
             </div>
           )}

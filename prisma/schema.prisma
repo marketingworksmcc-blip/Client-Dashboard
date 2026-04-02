@@ -130,6 +130,7 @@ model Client {
   googleSheetConfig   GoogleSheetConfig?
   teamworkConfig      TeamworkConfig?
   externalMetricApi   ExternalMetricApi?
+  funnelConfig        FunnelConfig?
   ga4Config           GA4Config?
   metaConfig          MetaConfig?
   googleAdsConfig     GoogleAdsConfig?
@@ -469,6 +470,24 @@ model MetaConfig {
   lastSyncError   String?
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
+
+  client Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
+}
+
+// ─── FUNNEL.IO INTEGRATION ───────────────────────────────────
+
+model FunnelConfig {
+  id            String    @id @default(cuid())
+  clientId      String    @unique
+  enabled       Boolean   @default(false)
+  apiKey        String    // Funnel.io API key
+  accountId     String    // Funnel.io account/organization ID
+  mappings      Json      @default("[]") // [{funnelMetric: string, metricId: string}]
+  channelData   Json      @default("[]") // [{channel: string, value: number}] — spend by channel
+  lastSyncedAt  DateTime?
+  lastSyncError String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 
   client Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
 }
