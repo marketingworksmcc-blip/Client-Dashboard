@@ -28,6 +28,20 @@ export async function saveTeamworkConfig(
   return { success: true, config };
 }
 
+export async function updateHiddenTaskLists(clientId: string, hiddenIds: string[]) {
+  await requireAdmin();
+
+  await prisma.teamworkConfig.update({
+    where: { clientId },
+    data: { hiddenTaskListIds: hiddenIds },
+  });
+
+  revalidatePath(`/admin/clients/${clientId}/teamwork`);
+  revalidatePath(`/teamwork`);
+  revalidatePath(`/tasks`);
+  return { success: true };
+}
+
 export async function deleteTeamworkConfig(clientId: string) {
   await requireAdmin();
 

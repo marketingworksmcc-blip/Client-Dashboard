@@ -401,13 +401,14 @@ model AnalyticsDataPoint {
 // ─── TEAMWORK INTEGRATION ────────────────────────────────────
 
 model TeamworkConfig {
-  id        String   @id @default(cuid())
-  clientId  String   @unique
-  enabled   Boolean  @default(false)
-  projectId String
-  domain    String   // e.g. "yourcompany.teamwork.com"
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id                String   @id @default(cuid())
+  clientId          String   @unique
+  enabled           Boolean  @default(false)
+  projectId         String
+  domain            String   // e.g. "yourcompany.teamwork.com"
+  hiddenTaskListIds String[] // Teamwork task list IDs hidden from the client
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
 
   client Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
 }

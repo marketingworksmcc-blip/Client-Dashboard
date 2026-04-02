@@ -38,7 +38,9 @@ export default async function ClientTasksPage() {
   let twTaskLists: Awaited<ReturnType<typeof fetchTaskLists>> = [];
   if (teamworkConfig?.enabled && teamworkConfig.projectId && teamworkConfig.domain) {
     try {
-      twTaskLists = await fetchTaskLists(teamworkConfig.domain, teamworkConfig.projectId);
+      const all = await fetchTaskLists(teamworkConfig.domain, teamworkConfig.projectId);
+      const hidden = new Set(teamworkConfig.hiddenTaskListIds ?? []);
+      twTaskLists = all.filter((tl) => !hidden.has(tl.id));
     } catch {
       // Silently fall back to empty list
     }

@@ -23,11 +23,15 @@ export default async function ClientTeamworkPage() {
   let fetchError: string | null = null;
 
   try {
-    [project, taskLists, timeEntries] = await Promise.all([
+    const [proj, allTaskLists, time] = await Promise.all([
       fetchProject(config.domain, config.projectId),
       fetchTaskLists(config.domain, config.projectId),
       fetchTimeEntries(config.domain, config.projectId),
     ]);
+    project = proj;
+    timeEntries = time;
+    const hidden = new Set(config.hiddenTaskListIds ?? []);
+    taskLists = allTaskLists.filter((tl) => !hidden.has(tl.id));
   } catch (err) {
     fetchError = err instanceof Error ? err.message : "Could not load project data.";
   }
