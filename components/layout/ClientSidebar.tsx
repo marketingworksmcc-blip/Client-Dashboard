@@ -15,10 +15,11 @@ import {
   LogOut,
   ChevronRight,
   X,
+  FolderKanban,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-const navItems = [
+const baseNavItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/proofs", label: "Proofs", icon: ImageIcon },
   { href: "/documents", label: "Documents", icon: FileText },
@@ -36,6 +37,7 @@ interface ClientSidebarProps {
   isOpen: boolean;
   onClose: () => void;
   pendingProofsCount?: number;
+  teamworkEnabled?: boolean;
 }
 
 export function ClientSidebar({
@@ -47,8 +49,12 @@ export function ClientSidebar({
   isOpen,
   onClose,
   pendingProofsCount = 0,
+  teamworkEnabled = false,
 }: ClientSidebarProps) {
   const pathname = usePathname();
+  const navItems = teamworkEnabled
+    ? [...baseNavItems, { href: "/teamwork", label: "Project", icon: FolderKanban }]
+    : baseNavItems;
 
   // Close sidebar on navigation (mobile)
   useEffect(() => {

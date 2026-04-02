@@ -128,7 +128,7 @@ export function AnalyticsDataGrid({ clientId, metrics, initialRows }: AnalyticsD
       suppressHeaderMenuButton: true,
     },
     {
-      field: "_dirty" as keyof PivotRow,
+      field: "_dirty" as unknown as string,
       headerName: "",
       width: 24,
       resizable: false,
@@ -141,7 +141,7 @@ export function AnalyticsDataGrid({ clientId, metrics, initialRows }: AnalyticsD
           : "",
     },
     {
-      field: "date" as keyof PivotRow,
+      field: "date" as unknown as string,
       headerName: "Date",
       editable: true,
       cellEditor: "agDateStringCellEditor",
@@ -154,7 +154,7 @@ export function AnalyticsDataGrid({ clientId, metrics, initialRows }: AnalyticsD
     },
     // One column per metric
     ...metrics.map((m): ColDef<PivotRow> => ({
-      field: m.id as keyof PivotRow,
+      field: m.id as unknown as string,
       headerName: m.name,
       editable: true,
       cellEditor: "agNumberCellEditor",
@@ -173,10 +173,10 @@ export function AnalyticsDataGrid({ clientId, metrics, initialRows }: AnalyticsD
 
   // ── Row styling ─────────────────────────────────────────────
   const getRowStyle = useCallback((params: { data?: PivotRow }) => {
-    if (!params.data) return {};
+    if (!params.data) return undefined;
     if (params.data._isNew) return { backgroundColor: "#f0fdf4" };
     if (params.data._dirty) return { backgroundColor: "#fffbeb" };
-    return {};
+    return undefined;
   }, []);
 
   // ── Handlers ───────────────────────────────────────────────

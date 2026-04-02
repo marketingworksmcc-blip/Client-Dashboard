@@ -13,7 +13,7 @@ export default async function ClientLayout({ children }: { children: React.React
 
   const clientId = session.user.clientIds?.[0];
 
-  const [branding, pendingProofsCount] = await Promise.all([
+  const [branding, pendingProofsCount, teamworkConfig] = await Promise.all([
     clientId
       ? getClientBranding(clientId)
       : Promise.resolve({
@@ -29,6 +29,9 @@ export default async function ClientLayout({ children }: { children: React.React
     clientId
       ? prisma.proof.count({ where: { clientId, status: { in: ["PENDING_REVIEW", "IN_REVIEW"] } } })
       : Promise.resolve(0),
+    clientId
+      ? prisma.teamworkConfig.findUnique({ where: { clientId }, select: { enabled: true } })
+      : Promise.resolve(null),
   ]);
 
   return (
@@ -47,6 +50,7 @@ export default async function ClientLayout({ children }: { children: React.React
         logoUrl={branding.logoUrl}
         primaryColor={branding.primaryColor ?? REVEL_DEFAULTS.primaryColor}
         pendingProofsCount={pendingProofsCount}
+        teamworkEnabled={teamworkConfig?.enabled ?? false}
       >
         {children}
       </ClientLayoutShell>

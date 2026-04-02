@@ -21,6 +21,7 @@ export function ClientDetailNav({ clientId }: ClientDetailNavProps) {
     { href: `${base}/tasks`, label: "Tasks" },
     { href: `${base}/analytics`, label: "Analytics" },
     { href: `${base}/budget`, label: "Budget" },
+    { href: `${base}/teamwork`, label: "Teamwork" },
   ];
 
   return (

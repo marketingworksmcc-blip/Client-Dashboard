@@ -12,6 +12,7 @@ interface ClientLayoutShellProps {
   logoUrl?: string | null;
   primaryColor?: string;
   pendingProofsCount?: number;
+  teamworkEnabled?: boolean;
 }
 
 export function ClientLayoutShell({
@@ -22,6 +23,7 @@ export function ClientLayoutShell({
   logoUrl,
   primaryColor = "#d3de2c",
   pendingProofsCount = 0,
+  teamworkEnabled = false,
 }: ClientLayoutShellProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
@@ -44,6 +46,7 @@ export function ClientLayoutShell({
         isOpen={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
         pendingProofsCount={pendingProofsCount}
+        teamworkEnabled={teamworkEnabled}
       />
 
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">

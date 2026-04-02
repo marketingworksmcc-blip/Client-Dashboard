@@ -6,12 +6,18 @@ import { ActivityFeed } from "@/components/dashboard/ActivityFeed";
 import { DeadlineList } from "@/components/dashboard/DeadlineList";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatCurrency } from "@/lib/utils";
-import { ImageIcon, DollarSign, CheckSquare, FileText } from "lucide-react";
+import { ImageIcon, DollarSign, CheckSquare, FileText, FolderKanban } from "lucide-react";
+import { fetchProject, fetchTasks } from "@/lib/teamwork";
+import Link from "next/link";
 
 export default async function ClientDashboardPage() {
   const session = await auth();
   const clientId = session!.user.clientIds?.[0] ?? null;
   const firstName = (session!.user.name ?? "").split(" ")[0];
+
+  const teamworkConfig = clientId
+    ? await prisma.teamworkConfig.findUnique({ where: { clientId } })
+    : null;
 
   const [
     pendingProofs,
@@ -63,6 +69,22 @@ export default async function ClientDashboardPage() {
         })
       : [],
   ]);
+
+  // Fetch Teamwork data if configured
+  let twProject = null;
+  let twOpenTaskCount = 0;
+  if (teamworkConfig?.enabled && teamworkConfig.projectId && teamworkConfig.domain) {
+    try {
+      const [proj, tasks] = await Promise.all([
+        fetchProject(teamworkConfig.domain, teamworkConfig.projectId),
+        fetchTasks(teamworkConfig.domain, teamworkConfig.projectId),
+      ]);
+      twProject = proj;
+      twOpenTaskCount = tasks.length;
+    } catch {
+      // Silently fail — dashboard shows fallback
+    }
+  }
 
   const budgetSpent = budgetData
     ? budgetData.lineItems.reduce((sum, item) => sum + Number(item.amount), 0)
@@ -141,6 +163,50 @@ export default async function ClientDashboardPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Teamwork project summary */}
+      {twProject && (
+        <Card className="border-[#e2e0d9]">
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="w-7 h-7 rounded-lg bg-[#f0efe9] flex items-center justify-center">
+                  <FolderKanban className="h-4 w-4 text-[#8a8880]" />
+                </div>
+                <CardTitle>{twProject.name}</CardTitle>
+              </div>
+              <Link
+                href="/teamwork"
+                className="text-xs text-[#8a8880] hover:text-[#464540] transition-colors"
+              >
+                View details →
+              </Link>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {/* Progress bar */}
+            <div>
+              <div className="flex items-center justify-between mb-1.5">
+                <span className="text-xs text-[#8a8880]">
+                  {twProject.completedTaskCount} of {twProject.totalTaskCount} tasks completed
+                </span>
+                <span className="text-xs font-semibold text-[#464540]">
+                  {twProject.percentComplete}%
+                </span>
+              </div>
+              <div className="h-2 bg-[#f0efe9] rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-[#263a2e] rounded-full"
+                  style={{ width: `${twProject.percentComplete}%` }}
+                />
+              </div>
+            </div>
+            <p className="text-xs text-[#8a8880]">
+              {twOpenTaskCount} open task{twOpenTaskCount !== 1 ? "s" : ""} remaining
+            </p>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }
