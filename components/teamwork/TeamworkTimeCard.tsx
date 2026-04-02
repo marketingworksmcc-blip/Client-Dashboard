@@ -39,7 +39,6 @@ export function TeamworkTimeCard({ entries }: { entries: TWTimeEntry[] }) {
         ) : (
           <div className="divide-y divide-[#f0efe9]">
             {entries.slice(0, 10).map((entry) => {
-              const name = `${entry.person.firstName} ${entry.person.lastName}`.trim();
               return (
                 <div key={entry.id} className="flex items-start gap-3 px-5 py-3">
                   <div className="flex-1 min-w-0">
@@ -48,7 +47,7 @@ export function TeamworkTimeCard({ entries }: { entries: TWTimeEntry[] }) {
                     ) : (
                       <p className="text-sm text-[#8a8880] italic">No description</p>
                     )}
-                    <p className="text-xs text-[#8a8880] mt-0.5">{name}</p>
+                    <p className="text-xs text-[#8a8880] mt-0.5">{entry.personName}</p>
                   </div>
                   <div className="text-right flex-shrink-0">
                     <p className="text-sm font-semibold text-[#464540]">

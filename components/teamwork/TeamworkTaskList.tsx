@@ -55,17 +55,14 @@ export function TeamworkTaskList({ tasks, title = "Teamwork Tasks" }: { tasks: T
             const p = priorityConfig[task.priority] ?? priorityConfig.none;
             const due = formatTWDate(task.dueDate);
             const overdue = isOverdue(task.dueDate);
-            const assigneeNames = task.assignees
-              .map((a) => `${a.firstName} ${a.lastName}`.trim())
-              .join(", ");
 
             return (
               <div key={task.id} className="flex items-start gap-3 px-5 py-3">
                 <div className={`w-2 h-2 rounded-full flex-shrink-0 mt-1.5 ${p.dot}`} />
                 <div className="flex-1 min-w-0">
                   <p className="text-sm text-[#464540] font-medium leading-snug">{task.name}</p>
-                  {assigneeNames && (
-                    <p className="text-xs text-[#8a8880] mt-0.5">{assigneeNames}</p>
+                  {task.assigneeNames && (
+                    <p className="text-xs text-[#8a8880] mt-0.5">{task.assigneeNames}</p>
                   )}
                 </div>
                 {due && (
