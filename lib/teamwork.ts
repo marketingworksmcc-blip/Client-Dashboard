@@ -109,25 +109,58 @@ export async function fetchProject(domain: string, projectId: string): Promise<T
   };
 }
 
-/** Fetch task lists for a project with completion counts. */
+/** Fetch task lists for a project with accurate completion counts.
+ *  Fetches task list names and ALL tasks (active + completed) in parallel,
+ *  then groups tasks by todo-list-id to compute counts directly. */
 export async function fetchTaskLists(domain: string, projectId: string): Promise<TWTaskList[]> {
-  const data = await twFetch<{ tasklists?: Record<string, unknown>[] }>(
-    domain,
-    `/projects/${projectId}/tasklists.json`
-  );
+  // Fetch task lists (for names/IDs) and all tasks in parallel
+  const [listsData, activeData, completedData] = await Promise.all([
+    twFetch<{ tasklists?: Record<string, unknown>[] }>(
+      domain,
+      `/projects/${projectId}/tasklists.json`
+    ),
+    twFetch<{ "todo-items"?: Record<string, unknown>[] }>(
+      domain,
+      `/projects/${projectId}/tasks.json?status=incomplete`
+    ),
+    twFetch<{ "todo-items"?: Record<string, unknown>[] }>(
+      domain,
+      `/projects/${projectId}/tasks.json?status=completed`
+    ),
+  ]);
 
-  return (data.tasklists ?? []).map((tl) => {
-    const completed   = Number(tl["completed-count"]   ?? tl["completedCount"]   ?? 0);
-    const uncompleted = Number(tl["uncompleted-count"] ?? tl["uncompletedCount"] ?? 0);
-    const total       = completed + uncompleted;
-    const isComplete  = Boolean(tl.complete);
+  // Group tasks by task list ID
+  const counts: Record<string, { total: number; completed: number }> = {};
+
+  for (const task of (activeData["todo-items"] ?? [])) {
+    const listId = String(task["todo-list-id"] ?? "");
+    if (!listId) continue;
+    if (!counts[listId]) counts[listId] = { total: 0, completed: 0 };
+    counts[listId].total++;
+  }
+
+  for (const task of (completedData["todo-items"] ?? [])) {
+    const listId = String(task["todo-list-id"] ?? "");
+    if (!listId) continue;
+    if (!counts[listId]) counts[listId] = { total: 0, completed: 0 };
+    counts[listId].total++;
+    counts[listId].completed++;
+  }
+
+  return (listsData.tasklists ?? []).map((tl) => {
+    const id        = String(tl.id ?? "");
+    const c         = counts[id] ?? { total: 0, completed: 0 };
+    const isComplete = Boolean(tl.complete);
+    const pct = c.total > 0
+      ? Math.round((c.completed / c.total) * 100)
+      : isComplete ? 100 : 0;
 
     return {
-      id: String(tl.id ?? ""),
+      id,
       name: String(tl.name ?? ""),
-      totalCount: total,
-      completedCount: Math.max(0, completed),
-      percentComplete: total > 0 ? Math.round((Math.max(0, completed) / total) * 100) : (isComplete ? 100 : 0),
+      totalCount: c.total,
+      completedCount: c.completed,
+      percentComplete: pct,
       isComplete,
     };
   });
