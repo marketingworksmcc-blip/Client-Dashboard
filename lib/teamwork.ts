@@ -71,7 +71,7 @@ async function twFetch<T>(domain: string, path: string): Promise<T> {
       Authorization: `Basic ${credentials}`,
       "Content-Type": "application/json",
     },
-    next: { revalidate: 300 }, // cache 5 minutes
+    cache: "no-store",
   });
 
   if (!res.ok) {
@@ -124,20 +124,16 @@ export async function fetchTaskLists(domain: string, projectId: string): Promise
   const taskCounts = await Promise.all(
     lists.map(async (tl) => {
       const id = String(tl.id ?? "");
-      try {
-        const data = await twFetch<{ "todo-items"?: Record<string, unknown>[] }>(
-          domain,
-          `/tasklists/${id}/tasks.json`
-        );
-        const items = data["todo-items"] ?? [];
-        const total     = items.length;
-        const completed = items.filter(
-          (t) => t.completed === true || t.completed === "1" || t.completed === 1
-        ).length;
-        return { id, total, completed };
-      } catch {
-        return { id, total: 0, completed: 0 };
-      }
+      const data = await twFetch<{ "todo-items"?: Record<string, unknown>[] }>(
+        domain,
+        `/tasklists/${id}/tasks.json`
+      );
+      const items = data["todo-items"] ?? [];
+      const total     = items.length;
+      const completed = items.filter(
+        (t) => t.completed === true || t.completed === "1" || t.completed === 1
+      ).length;
+      return { id, total, completed };
     })
   );
 
