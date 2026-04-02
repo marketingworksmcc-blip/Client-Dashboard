@@ -53,10 +53,11 @@ function getApiKey(): string {
 async function twFetch<T>(domain: string, path: string): Promise<T> {
   const apiKey = getApiKey();
   const url = `https://${domain}/projects/api/v3${path}`;
+  const credentials = Buffer.from(`${apiKey}:x`).toString("base64");
 
   const res = await fetch(url, {
     headers: {
-      Authorization: `Bearer ${apiKey}`,
+      Authorization: `Basic ${credentials}`,
       "Content-Type": "application/json",
     },
     next: { revalidate: 300 }, // cache 5 minutes
