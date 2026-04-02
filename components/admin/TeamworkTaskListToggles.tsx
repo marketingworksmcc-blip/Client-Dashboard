@@ -12,8 +12,9 @@ interface Props {
 }
 
 export function TeamworkTaskListToggles({ clientId, taskLists, hiddenTaskListIds }: Props) {
-  const [hidden, setHidden] = useState<Set<string>>(new Set(hiddenTaskListIds));
+  const [hidden, setHidden] = useState<Set<string>>(new Set(hiddenTaskListIds ?? []));
   const [isPending, startTransition] = useTransition();
+  const [error, setError] = useState<string | null>(null);
 
   function toggle(id: string) {
     const next = new Set(hidden);
@@ -23,8 +24,15 @@ export function TeamworkTaskListToggles({ clientId, taskLists, hiddenTaskListIds
       next.add(id);
     }
     setHidden(next);
+    setError(null);
     startTransition(async () => {
-      await updateHiddenTaskLists(clientId, Array.from(next));
+      try {
+        await updateHiddenTaskLists(clientId, Array.from(next));
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Failed to save. Please try again.");
+        // Revert optimistic update
+        setHidden(hidden);
+      }
     });
   }
 
@@ -32,12 +40,19 @@ export function TeamworkTaskListToggles({ clientId, taskLists, hiddenTaskListIds
     return <p className="text-sm text-[#8a8880] py-2">No task lists found in this project.</p>;
   }
 
+
+
   const overallTotal     = taskLists.reduce((s, tl) => s + tl.totalCount, 0);
   const overallCompleted = taskLists.reduce((s, tl) => s + tl.completedCount, 0);
   const overallPct       = overallTotal > 0 ? Math.round((overallCompleted / overallTotal) * 100) : 0;
 
   return (
     <div className="space-y-5">
+      {error && (
+        <div className="px-3 py-2 rounded-lg text-xs font-medium border bg-red-50 text-[#ff6b6c] border-red-200">
+          {error}
+        </div>
+      )}
       {/* Overall progress */}
       {taskLists.length > 1 && (
         <div className="pb-4 border-b border-[#f0efe9]">

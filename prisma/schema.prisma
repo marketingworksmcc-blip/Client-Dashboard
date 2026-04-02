@@ -406,7 +406,7 @@ model TeamworkConfig {
   enabled           Boolean  @default(false)
   projectId         String
   domain            String   // e.g. "yourcompany.teamwork.com"
-  hiddenTaskListIds String[] // Teamwork task list IDs hidden from the client
+  hiddenTaskListIds String[] @default([]) // Teamwork task list IDs hidden from the client
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 

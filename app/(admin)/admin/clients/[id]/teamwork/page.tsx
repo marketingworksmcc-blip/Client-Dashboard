@@ -149,7 +149,7 @@ export default async function ClientTeamworkPage({
                   <TeamworkTaskListToggles
                     clientId={id}
                     taskLists={taskLists}
-                    hiddenTaskListIds={config.hiddenTaskListIds}
+                    hiddenTaskListIds={config.hiddenTaskListIds ?? []}
                   />
                 </CardContent>
               </Card>
