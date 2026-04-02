@@ -117,10 +117,10 @@ export async function fetchTaskLists(domain: string, projectId: string): Promise
   );
 
   return (data.tasklists ?? []).map((tl) => {
-    const total     = Number(tl["todo-items-count"] ?? tl["todoItemsCount"] ?? 0);
+    const completed   = Number(tl["completed-count"]   ?? tl["completedCount"]   ?? 0);
     const uncompleted = Number(tl["uncompleted-count"] ?? tl["uncompletedCount"] ?? 0);
-    const completed = total - uncompleted;
-    const isComplete = Boolean(tl.complete);
+    const total       = completed + uncompleted;
+    const isComplete  = Boolean(tl.complete);
 
     return {
       id: String(tl.id ?? ""),
