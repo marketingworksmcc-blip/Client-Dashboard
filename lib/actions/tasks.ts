@@ -76,13 +76,13 @@ export async function updateTaskStatus(taskId: string, status: string) {
   const task = await prisma.task.findUnique({ where: { id: taskId } });
   if (!task) throw new Error("Task not found");
 
-  // Clients can only update if allowClientUpdate is true
-  if (!isRevelUser(session.user.role) && !task.allowClientUpdate) {
-    throw new Error("Unauthorized");
-  }
-
   const validStatuses = ["TODO", "IN_PROGRESS", "NEEDS_INPUT", "COMPLETED", "ARCHIVED"];
   if (!validStatuses.includes(status)) throw new Error("Invalid status");
+
+  // Only admins can archive
+  if (status === "ARCHIVED" && !isRevelUser(session.user.role)) {
+    throw new Error("Unauthorized");
+  }
 
   await prisma.task.update({ where: { id: taskId }, data: { status: status as never } });
 
@@ -99,7 +99,36 @@ export async function updateTaskStatus(taskId: string, status: string) {
 
   revalidatePath(`/admin/tasks/${taskId}`);
   revalidatePath(`/tasks/${taskId}`);
+  revalidatePath(`/tasks`);
   revalidatePath(`/admin/clients/${task.clientId}/tasks`);
+}
+
+export async function archiveTask(taskId: string) {
+  await requireRevelUser();
+
+  const task = await prisma.task.findUnique({ where: { id: taskId } });
+  if (!task) throw new Error("Task not found");
+
+  await prisma.task.update({ where: { id: taskId }, data: { status: "ARCHIVED" } });
+
+  revalidatePath(`/admin/tasks/${taskId}`);
+  revalidatePath(`/admin/tasks`);
+  revalidatePath(`/admin/clients/${task.clientId}/tasks`);
+  revalidatePath(`/tasks`);
+}
+
+export async function restoreTask(taskId: string) {
+  await requireRevelUser();
+
+  const task = await prisma.task.findUnique({ where: { id: taskId } });
+  if (!task) throw new Error("Task not found");
+
+  await prisma.task.update({ where: { id: taskId }, data: { status: "TODO" } });
+
+  revalidatePath(`/admin/tasks/${taskId}`);
+  revalidatePath(`/admin/tasks`);
+  revalidatePath(`/admin/clients/${task.clientId}/tasks`);
+  revalidatePath(`/tasks`);
 }
 
 export async function addTaskNote(taskId: string, prevState: unknown, formData: FormData) {

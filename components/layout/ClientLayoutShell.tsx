@@ -11,6 +11,7 @@ interface ClientLayoutShellProps {
   portalSubtitle?: string;
   logoUrl?: string | null;
   primaryColor?: string;
+  pendingProofsCount?: number;
 }
 
 export function ClientLayoutShell({
@@ -20,6 +21,7 @@ export function ClientLayoutShell({
   portalSubtitle,
   logoUrl,
   primaryColor = "#d3de2c",
+  pendingProofsCount = 0,
 }: ClientLayoutShellProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
@@ -41,6 +43,7 @@ export function ClientLayoutShell({
         primaryColor={primaryColor}
         isOpen={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
+        pendingProofsCount={pendingProofsCount}
       />
 
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">

@@ -109,6 +109,7 @@ export async function createProof(clientId: string, prevState: unknown, formData
 
   revalidatePath(`/admin/clients/${clientId}/proofs`);
   revalidatePath(`/admin/proofs`);
+  revalidatePath("/", "layout");
   redirect(`/admin/proofs/${proof.id}`);
 }
 
@@ -301,6 +302,7 @@ export async function setProofInReview(proofId: string) {
   await requireRevelUser();
   await prisma.proof.update({ where: { id: proofId }, data: { status: "IN_REVIEW" } });
   revalidatePath(`/admin/proofs/${proofId}`);
+  revalidatePath("/", "layout");
 }
 
 export async function deleteProof(proofId: string) {
@@ -331,5 +333,6 @@ export async function deleteProof(proofId: string) {
 
   revalidatePath(`/admin/clients/${clientId}/proofs`);
   revalidatePath(`/admin/proofs`);
+  revalidatePath("/", "layout");
   redirect(`/admin/clients/${clientId}/proofs`);
 }

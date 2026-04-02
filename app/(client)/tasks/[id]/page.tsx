@@ -89,7 +89,7 @@ export default async function ClientTaskDetailPage({ params }: { params: Promise
             </CardContent>
           </Card>
 
-          {task.allowClientUpdate && task.status !== "ARCHIVED" && (
+          {task.status !== "ARCHIVED" && (
             <Card className="border-[#e2e0d9]">
               <CardHeader className="pb-3">
                 <CardTitle>Update Status</CardTitle>

@@ -35,6 +35,7 @@ interface ClientSidebarProps {
   primaryColor?: string;
   isOpen: boolean;
   onClose: () => void;
+  pendingProofsCount?: number;
 }
 
 export function ClientSidebar({
@@ -45,6 +46,7 @@ export function ClientSidebar({
   primaryColor = "#d3de2c",
   isOpen,
   onClose,
+  pendingProofsCount = 0,
 }: ClientSidebarProps) {
   const pathname = usePathname();
 
@@ -117,6 +119,11 @@ export function ClientSidebar({
                 style={isActive ? { color: primaryColor } : {}}
               />
               {item.label}
+              {item.href === "/proofs" && pendingProofsCount > 0 && !isActive && (
+                <span className="ml-auto flex h-4 w-4 items-center justify-center rounded-full bg-[#ff6b6c] text-[10px] font-bold text-white flex-shrink-0">
+                  {pendingProofsCount > 9 ? "9+" : pendingProofsCount}
+                </span>
+              )}
               {isActive && (
                 <ChevronRight className="h-3 w-3 ml-auto opacity-60" style={{ color: primaryColor }} />
               )}

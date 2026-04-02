@@ -13,16 +13,18 @@ export default async function ClientTasksTab({ params }: { params: Promise<{ id:
   if (!client) notFound();
 
   const tasks = await prisma.task.findMany({
-    where: { clientId: id, status: { not: "ARCHIVED" } },
+    where: { clientId: id },
     orderBy: { createdAt: "desc" },
     include: {
       notes: { orderBy: { createdAt: "asc" }, include: { user: { select: { name: true } } } },
     },
   });
 
+  // Sort: active → completed → archived
   const sorted = [
-    ...tasks.filter((t) => t.status !== "COMPLETED"),
+    ...tasks.filter((t) => t.status !== "COMPLETED" && t.status !== "ARCHIVED"),
     ...tasks.filter((t) => t.status === "COMPLETED"),
+    ...tasks.filter((t) => t.status === "ARCHIVED"),
   ];
 
   return (
@@ -56,7 +58,7 @@ export default async function ClientTasksTab({ params }: { params: Promise<{ id:
               key={task.id}
               task={task}
               notes={task.notes}
-              canCheck // admins can always check off tasks
+              isAdmin
             />
           ))}
         </div>

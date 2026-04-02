@@ -11,18 +11,19 @@ export default async function ClientTasksPage() {
 
   const tasks = clientId
     ? await prisma.task.findMany({
-        where: { clientId, status: { not: "ARCHIVED" } },
-        orderBy: [{ status: "asc" }, { createdAt: "desc" }],
+        where: { clientId },
+        orderBy: { createdAt: "desc" },
         include: {
           notes: { orderBy: { createdAt: "asc" }, include: { user: { select: { name: true } } } },
         },
       })
     : [];
 
-  // Sort: incomplete first, completed last
+  // Sort: active → completed → archived
   const sorted = [
-    ...tasks.filter((t) => t.status !== "COMPLETED"),
+    ...tasks.filter((t) => t.status !== "COMPLETED" && t.status !== "ARCHIVED"),
     ...tasks.filter((t) => t.status === "COMPLETED"),
+    ...tasks.filter((t) => t.status === "ARCHIVED"),
   ];
 
   return (
@@ -42,7 +43,6 @@ export default async function ClientTasksPage() {
               key={task.id}
               task={task}
               notes={task.notes}
-              canCheck={task.allowClientUpdate}
             />
           ))}
         </div>

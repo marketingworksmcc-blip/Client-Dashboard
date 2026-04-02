@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { isClientUser } from "@/lib/permissions";
 import { ClientLayoutShell } from "@/components/layout/ClientLayoutShell";
 import { getClientBranding, REVEL_DEFAULTS } from "@/lib/branding";
+import { prisma } from "@/lib/prisma";
 
 export default async function ClientLayout({ children }: { children: React.ReactNode }) {
   const session = await auth();
@@ -11,18 +12,24 @@ export default async function ClientLayout({ children }: { children: React.React
   if (!isClientUser(session.user.role)) redirect("/admin/dashboard");
 
   const clientId = session.user.clientIds?.[0];
-  const branding = clientId
-    ? await getClientBranding(clientId)
-    : {
-        portalName: REVEL_DEFAULTS.portalName,
-        portalSubtitle: REVEL_DEFAULTS.portalSubtitle,
-        primaryColor: REVEL_DEFAULTS.primaryColor,
-        secondaryColor: REVEL_DEFAULTS.secondaryColor,
-        backgroundStyle: REVEL_DEFAULTS.backgroundStyle,
-        logoUrl: null,
-        faviconUrl: null,
-        customCss: null,
-      };
+
+  const [branding, pendingProofsCount] = await Promise.all([
+    clientId
+      ? getClientBranding(clientId)
+      : Promise.resolve({
+          portalName: REVEL_DEFAULTS.portalName,
+          portalSubtitle: REVEL_DEFAULTS.portalSubtitle,
+          primaryColor: REVEL_DEFAULTS.primaryColor,
+          secondaryColor: REVEL_DEFAULTS.secondaryColor,
+          backgroundStyle: REVEL_DEFAULTS.backgroundStyle,
+          logoUrl: null,
+          faviconUrl: null,
+          customCss: null,
+        }),
+    clientId
+      ? prisma.proof.count({ where: { clientId, status: { in: ["PENDING_REVIEW", "IN_REVIEW"] } } })
+      : Promise.resolve(0),
+  ]);
 
   return (
     <div
@@ -39,6 +46,7 @@ export default async function ClientLayout({ children }: { children: React.React
         portalSubtitle={branding.portalSubtitle ?? undefined}
         logoUrl={branding.logoUrl}
         primaryColor={branding.primaryColor ?? REVEL_DEFAULTS.primaryColor}
+        pendingProofsCount={pendingProofsCount}
       >
         {children}
       </ClientLayoutShell>

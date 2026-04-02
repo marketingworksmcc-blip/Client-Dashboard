@@ -8,6 +8,8 @@ import { TaskPriorityBadge } from "@/components/tasks/TaskPriorityBadge";
 import { TaskNotes } from "@/components/tasks/TaskNotes";
 import { UpdateTaskStatus } from "@/components/tasks/UpdateTaskStatus";
 import { DeleteTaskButton } from "@/components/tasks/DeleteTaskButton";
+import { ArchiveTaskButton } from "@/components/tasks/ArchiveTaskButton";
+import { RestoreTaskButton } from "@/components/tasks/RestoreTaskButton";
 import { EditTaskForm } from "@/components/tasks/EditTaskForm";
 import { deleteTask } from "@/lib/actions/tasks";
 import { formatDate, formatRelativeTime } from "@/lib/utils";
@@ -139,7 +141,11 @@ export default async function AdminTaskDetailPage({ params }: { params: Promise<
             <CardHeader className="pb-3">
               <CardTitle>Actions</CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="space-y-2">
+              {task.status === "ARCHIVED"
+                ? <RestoreTaskButton taskId={id} />
+                : <ArchiveTaskButton taskId={id} />
+              }
               <DeleteTaskButton taskTitle={task.title} deleteAction={deleteWithId} />
             </CardContent>
           </Card>
