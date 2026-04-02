@@ -3,9 +3,14 @@ import { prisma } from "@/lib/prisma";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { StatCard } from "@/components/analytics/StatCard";
 import { ChartCard } from "@/components/analytics/ChartCard";
-import { AnalyticsTable } from "@/components/analytics/AnalyticsTable";
+import { KeyEventsPieChart } from "@/components/analytics/KeyEventsPieChart";
+import { MetaCampaignPieChart } from "@/components/analytics/MetaCampaignPieChart";
+import { GoogleAdsCampaignPieChart } from "@/components/analytics/GoogleAdsCampaignPieChart";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { BarChart2, ExternalLink, RefreshCw, AlertTriangle } from "lucide-react";
+import type { KeyEventSource } from "@/lib/actions/ga4";
+import type { CampaignDataPoint } from "@/lib/actions/meta";
+import type { AdsCampaignDataPoint } from "@/lib/actions/googleAds";
 import { formatRelativeTime } from "@/lib/utils";
 
 // ── Helpers ──────────────────────────────────────────────────
@@ -34,7 +39,7 @@ export default async function ClientAnalyticsPage() {
   const session = await auth();
   const clientId = session!.user.clientIds?.[0];
 
-  const [client, clientMetrics, upcomingTasks, reports] = await Promise.all([
+  const [client, clientMetrics, reports, ga4Config, metaConfig, googleAdsConfig] = await Promise.all([
     clientId
       ? prisma.client.findUnique({
           where: { id: clientId },
@@ -54,30 +59,44 @@ export default async function ClientAnalyticsPage() {
         })
       : Promise.resolve([]),
     clientId
-      ? prisma.task.findMany({
-          where: {
-            clientId,
-            dueDate: { not: null },
-            status: { notIn: ["COMPLETED", "ARCHIVED"] },
-          },
-          orderBy: { dueDate: "asc" },
-          take: 8,
-          include: {
-            assignedTo: { select: { name: true, email: true } },
-          },
-        })
-      : Promise.resolve([]),
-    clientId
       ? prisma.analyticsReport.findMany({
           where: { clientId, isActive: true },
           orderBy: { createdAt: "desc" },
           include: { metrics: { orderBy: { createdAt: "asc" } } },
         })
       : Promise.resolve([]),
+    clientId
+      ? prisma.gA4Config.findUnique({
+          where: { clientId },
+          select: { keyEventName: true, keyEventsData: true, enabled: true },
+        })
+      : Promise.resolve(null),
+    clientId
+      ? prisma.metaConfig.findUnique({
+          where: { clientId },
+          select: { campaignData: true, enabled: true },
+        })
+      : Promise.resolve(null),
+    clientId
+      ? prisma.googleAdsConfig.findUnique({
+          where: { clientId },
+          select: { campaignData: true, enabled: true },
+        })
+      : Promise.resolve(null),
   ]);
 
   const analyticsMode = client?.analyticsMode ?? "MANUAL";
   const sheetConfig = client?.googleSheetConfig ?? null;
+  const keyEventsData = (ga4Config?.enabled && ga4Config?.keyEventsData
+    ? ga4Config.keyEventsData
+    : []) as unknown as KeyEventSource[];
+  const keyEventName = ga4Config?.enabled ? (ga4Config?.keyEventName ?? null) : null;
+  const metaCampaignData = (metaConfig?.enabled && metaConfig?.campaignData
+    ? metaConfig.campaignData
+    : []) as unknown as CampaignDataPoint[];
+  const googleAdsCampaignData = (googleAdsConfig?.enabled && googleAdsConfig?.campaignData
+    ? googleAdsConfig.campaignData
+    : []) as unknown as AdsCampaignDataPoint[];
 
   const cardMetrics = clientMetrics.filter((m) => m.showAsCard);
   const chartMetrics = clientMetrics.filter((m) => m.showAsChart);
@@ -85,17 +104,6 @@ export default async function ClientAnalyticsPage() {
 
   const externalLinks = reports.filter((r) => r.reportType === "EXTERNAL_LINK" && r.reportUrl);
   const otherReports = reports.filter((r) => r.reportType !== "EXTERNAL_LINK");
-
-  const taskRows = upcomingTasks.map((t) => ({
-    id: t.id,
-    title: t.title,
-    priority: t.priority,
-    dueDate: t.dueDate,
-    assignedToName: t.assignedTo?.name ?? null,
-    assignedToEmail: t.assignedTo?.email ?? null,
-    clientId: t.clientId,
-  }));
-
   const isEmpty = !hasMetricData && reports.length === 0 && externalLinks.length === 0;
 
   return (
@@ -185,8 +193,11 @@ export default async function ClientAnalyticsPage() {
             </div>
           )}
 
-          {/* ── Charts ── */}
-          {chartMetrics.filter((m) => m.dataPoints.length > 0).length > 0 && (
+          {/* ── Charts + pie charts ── */}
+          {(chartMetrics.filter((m) => m.dataPoints.length > 0).length > 0 ||
+            (keyEventName && keyEventsData.length > 0) ||
+            metaCampaignData.length > 0 ||
+            googleAdsCampaignData.length > 0) && (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               {chartMetrics
                 .filter((m) => m.dataPoints.length > 0)
@@ -201,13 +212,15 @@ export default async function ClientAnalyticsPage() {
                     color={m.color}
                   />
                 ))}
-            </div>
-          )}
-
-          {/* ── Upcoming tasks table ── */}
-          {upcomingTasks.length > 0 && (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              <AnalyticsTable tasks={taskRows} viewAllHref="/tasks" />
+              {keyEventName && (
+                <KeyEventsPieChart data={keyEventsData} keyEventName={keyEventName} />
+              )}
+              {metaCampaignData.length > 0 && (
+                <MetaCampaignPieChart data={metaCampaignData} />
+              )}
+              {googleAdsCampaignData.length > 0 && (
+                <GoogleAdsCampaignPieChart data={googleAdsCampaignData} />
+              )}
             </div>
           )}
 

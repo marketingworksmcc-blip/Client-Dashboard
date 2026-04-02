@@ -230,7 +230,7 @@ function MetricCard({
   metric: Metric;
   onDelete: (id: string) => void;
 }) {
-  const [expanded, setExpanded] = useState(metric.dataPoints.length > 0);
+  const [expanded, setExpanded] = useState(false);
   const [editingName, setEditingName] = useState(false);
   const [nameVal, setNameVal] = useState(metric.name);
   const [selectedColor, setSelectedColor] = useState(metric.color);

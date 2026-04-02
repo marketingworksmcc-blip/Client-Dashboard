@@ -129,6 +129,10 @@ model Client {
   brandSettings       ClientBrandSettings?
   googleSheetConfig   GoogleSheetConfig?
   teamworkConfig      TeamworkConfig?
+  externalMetricApi   ExternalMetricApi?
+  ga4Config           GA4Config?
+  metaConfig          MetaConfig?
+  googleAdsConfig     GoogleAdsConfig?
   clientUsers         ClientUser[]
   proofs              Proof[]
   documents           Document[]
@@ -409,6 +413,87 @@ model TeamworkConfig {
   hiddenTaskListIds String[] @default([]) // Teamwork task list IDs hidden from the client
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
+
+  client Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
+}
+
+// ─── GA4 INTEGRATION ─────────────────────────────────────────
+
+model GA4Config {
+  id                 String    @id @default(cuid())
+  clientId           String    @unique
+  enabled            Boolean   @default(false)
+  propertyId         String
+  serviceAccountJson String    // full service account JSON key
+  mappings           Json      @default("[]") // [{ga4Metric: string, metricId: string}]
+  keyEventName       String?   // e.g. "generate_lead" — GA4 key event to track by source
+  keyEventsData      Json      @default("[]") // [{source: string, value: number}] — latest sync
+  lastSyncedAt       DateTime?
+  lastSyncError      String?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  client Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
+}
+
+// ─── GOOGLE ADS INTEGRATION ──────────────────────────────────
+
+model GoogleAdsConfig {
+  id                 String    @id @default(cuid())
+  clientId           String    @unique
+  enabled            Boolean   @default(false)
+  customerId         String    // Google Ads Customer ID (digits only, no dashes)
+  developerToken     String    // From Google Ads API Center
+  serviceAccountJson String    // Service account with Google Ads access
+  mappings           Json      @default("[]") // [{adsMetric: string, metricId: string}]
+  campaignData       Json      @default("[]") // [{campaign: string, value: number}] — spend by campaign
+  lastSyncedAt       DateTime?
+  lastSyncError      String?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  client Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
+}
+
+// ─── META ADS INTEGRATION ────────────────────────────────────
+
+model MetaConfig {
+  id              String    @id @default(cuid())
+  clientId        String    @unique
+  enabled         Boolean   @default(false)
+  adAccountId     String    // e.g. "123456789" (without "act_" prefix)
+  accessToken     String    // System User or long-lived access token
+  mappings        Json      @default("[]") // [{metaMetric: string, metricId: string}]
+  campaignData    Json      @default("[]") // [{campaign: string, value: number}] — latest sync by campaign
+  lastSyncedAt    DateTime?
+  lastSyncError   String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  client Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
+}
+
+// ─── EXTERNAL METRIC API ─────────────────────────────────────
+
+enum ExternalApiAuthType {
+  NONE
+  BEARER
+  API_KEY_HEADER
+}
+
+model ExternalMetricApi {
+  id           String               @id @default(cuid())
+  clientId     String               @unique
+  enabled      Boolean              @default(false)
+  apiUrl       String
+  authType     ExternalApiAuthType  @default(NONE)
+  apiKey       String?              // token or key value
+  headerName   String?              // custom header name when authType = API_KEY_HEADER
+  mappings     Json                 @default("[]") // [{apiField: string, metricId: string}]
+  lastSyncedAt DateTime?
+  lastSyncError String?
+  createdAt    DateTime             @default(now())
+  updatedAt    DateTime             @updatedAt
 
   client Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
 }
