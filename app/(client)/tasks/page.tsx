@@ -3,8 +3,8 @@ import { prisma } from "@/lib/prisma";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { TaskChecklistItem } from "@/components/tasks/TaskChecklistItem";
 import { EmptyState } from "@/components/shared/EmptyState";
-import { TeamworkTaskList } from "@/components/teamwork/TeamworkTaskList";
-import { fetchTasks } from "@/lib/teamwork";
+import { TeamworkTaskListProgress } from "@/components/teamwork/TeamworkTaskListProgress";
+import { fetchTaskLists } from "@/lib/teamwork";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CheckSquare } from "lucide-react";
 
@@ -34,11 +34,11 @@ export default async function ClientTasksPage() {
     ...tasks.filter((t) => t.status === "ARCHIVED"),
   ];
 
-  // Fetch Teamwork tasks if integration is enabled
-  let twTasks: Awaited<ReturnType<typeof fetchTasks>> = [];
+  // Fetch Teamwork task lists if integration is enabled
+  let twTaskLists: Awaited<ReturnType<typeof fetchTaskLists>> = [];
   if (teamworkConfig?.enabled && teamworkConfig.projectId && teamworkConfig.domain) {
     try {
-      twTasks = await fetchTasks(teamworkConfig.domain, teamworkConfig.projectId);
+      twTaskLists = await fetchTaskLists(teamworkConfig.domain, teamworkConfig.projectId);
     } catch {
       // Silently fall back to empty list
     }
@@ -86,8 +86,8 @@ export default async function ClientTasksPage() {
             </CardContent>
           </Card>
 
-          {/* Teamwork tasks */}
-          <TeamworkTaskList tasks={twTasks} title="Teamwork Tasks" />
+          {/* Teamwork task list progress */}
+          <TeamworkTaskListProgress taskLists={twTaskLists} />
         </div>
       ) : (
         // ── Single-column layout (no Teamwork) ──

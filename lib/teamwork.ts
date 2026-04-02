@@ -26,6 +26,15 @@ export interface TWProject {
   endDate: string | null;
 }
 
+export interface TWTaskList {
+  id: string;
+  name: string;
+  totalCount: number;
+  completedCount: number;
+  percentComplete: number;
+  isComplete: boolean;
+}
+
 export interface TWTask {
   id: string;
   name: string;
@@ -98,6 +107,30 @@ export async function fetchProject(domain: string, projectId: string): Promise<T
     startDate: (p["start-date"] as string) ?? (p.startDate as string) ?? null,
     endDate:   (p["end-date"]   as string) ?? (p.endDate   as string) ?? null,
   };
+}
+
+/** Fetch task lists for a project with completion counts. */
+export async function fetchTaskLists(domain: string, projectId: string): Promise<TWTaskList[]> {
+  const data = await twFetch<{ tasklists?: Record<string, unknown>[] }>(
+    domain,
+    `/projects/${projectId}/tasklists.json`
+  );
+
+  return (data.tasklists ?? []).map((tl) => {
+    const total     = Number(tl["todo-items-count"] ?? tl["todoItemsCount"] ?? 0);
+    const uncompleted = Number(tl["uncompleted-count"] ?? tl["uncompletedCount"] ?? 0);
+    const completed = total - uncompleted;
+    const isComplete = Boolean(tl.complete);
+
+    return {
+      id: String(tl.id ?? ""),
+      name: String(tl.name ?? ""),
+      totalCount: total,
+      completedCount: Math.max(0, completed),
+      percentComplete: total > 0 ? Math.round((Math.max(0, completed) / total) * 100) : (isComplete ? 100 : 0),
+      isComplete,
+    };
+  });
 }
 
 /** Fetch incomplete tasks for a project (up to 50). */

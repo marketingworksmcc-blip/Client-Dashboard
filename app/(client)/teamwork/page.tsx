@@ -3,9 +3,9 @@ import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { TeamworkProjectCard } from "@/components/teamwork/TeamworkProjectCard";
-import { TeamworkTaskList } from "@/components/teamwork/TeamworkTaskList";
+import { TeamworkTaskListProgress } from "@/components/teamwork/TeamworkTaskListProgress";
 import { TeamworkTimeCard } from "@/components/teamwork/TeamworkTimeCard";
-import { fetchProject, fetchTasks, fetchTimeEntries } from "@/lib/teamwork";
+import { fetchProject, fetchTaskLists, fetchTimeEntries } from "@/lib/teamwork";
 import { AlertCircle } from "lucide-react";
 
 export default async function ClientTeamworkPage() {
@@ -18,14 +18,14 @@ export default async function ClientTeamworkPage() {
   if (!config?.enabled) notFound();
 
   let project = null;
-  let tasks: Awaited<ReturnType<typeof fetchTasks>> = [];
+  let taskLists: Awaited<ReturnType<typeof fetchTaskLists>> = [];
   let timeEntries: Awaited<ReturnType<typeof fetchTimeEntries>> = [];
   let fetchError: string | null = null;
 
   try {
-    [project, tasks, timeEntries] = await Promise.all([
+    [project, taskLists, timeEntries] = await Promise.all([
       fetchProject(config.domain, config.projectId),
-      fetchTasks(config.domain, config.projectId),
+      fetchTaskLists(config.domain, config.projectId),
       fetchTimeEntries(config.domain, config.projectId),
     ]);
   } catch (err) {
@@ -49,9 +49,9 @@ export default async function ClientTeamworkPage() {
           {/* Project status */}
           <TeamworkProjectCard project={project} />
 
-          {/* Tasks + time side by side on large screens */}
+          {/* Task list progress + time side by side on large screens */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <TeamworkTaskList tasks={tasks} />
+            <TeamworkTaskListProgress taskLists={taskLists} />
             <TeamworkTimeCard entries={timeEntries} />
           </div>
         </div>
