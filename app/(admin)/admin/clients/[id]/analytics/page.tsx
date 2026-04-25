@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
+import { SocialConfigForm } from "@/components/social/SocialConfigForm";
 import { MetricsManager } from "@/components/analytics/MetricsManager";
 import { CollapsibleCard } from "@/components/ui/CollapsibleCard";
 import { ReportLinksManager } from "@/components/analytics/ReportLinksManager";
@@ -57,7 +58,7 @@ export default async function ClientAnalyticsTab({
   const isGrid = view === "grid";
   const isClientView = view === "client";
 
-  const [externalReports, metrics, funnelConfig, ga4Config, metaConfig, googleAdsConfig, allReports, upcomingTasks] =
+  const [externalReports, metrics, funnelConfig, ga4Config, metaConfig, googleAdsConfig, allReports, upcomingTasks, socialConfig] =
     await Promise.all([
       prisma.analyticsReport.findMany({
         where: { clientId: id, isActive: true, reportType: "EXTERNAL_LINK" },
@@ -87,6 +88,7 @@ export default async function ClientAnalyticsTab({
         take: 8,
         include: { assignedTo: { select: { name: true, email: true } } },
       }),
+      prisma.socialConfig.findUnique({ where: { clientId: id } }),
     ]);
 
   const serializedMetrics = metrics.map((m) => ({
@@ -439,6 +441,28 @@ export default async function ClientAnalyticsTab({
                       mappings: funnelConfig.mappings as unknown as FunnelMetricMapping[],
                       lastSyncedAt: funnelConfig.lastSyncedAt?.toISOString() ?? null,
                       lastSyncError: funnelConfig.lastSyncError,
+                    }
+                  : null
+              }
+            />
+          </CollapsibleCard>
+
+          <CollapsibleCard
+            title="Social Media Tracking"
+            description="Connect Instagram and Facebook to sync organic post performance and content library."
+            defaultOpen={false}
+          >
+            <SocialConfigForm
+              clientId={id}
+              config={
+                socialConfig
+                  ? {
+                      enabled: socialConfig.enabled,
+                      accessToken: socialConfig.accessToken,
+                      instagramUserId: socialConfig.instagramUserId,
+                      facebookPageId: socialConfig.facebookPageId,
+                      lastSyncedAt: socialConfig.lastSyncedAt?.toISOString() ?? null,
+                      lastSyncError: socialConfig.lastSyncError,
                     }
                   : null
               }

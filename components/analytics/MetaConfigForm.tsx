@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Save, Play, RefreshCw, Plus, Trash2, CheckCircle2, XCircle } from "lucide-react";
+import { MetaCreativesPreview } from "@/components/analytics/MetaCreativesPreview";
 
 interface MetricOption {
   id: string;
@@ -325,6 +326,9 @@ export function MetaConfigForm({ clientId, metrics, config }: Props) {
           {message.text}
         </div>
       )}
+
+      {/* Creative preview */}
+      <MetaCreativesPreview clientId={clientId} enabled={enabled} />
 
       {/* Actions */}
       <div className="flex items-center gap-2 pt-1">

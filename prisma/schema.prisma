@@ -134,6 +134,7 @@ model Client {
   ga4Config           GA4Config?
   metaConfig          MetaConfig?
   googleAdsConfig     GoogleAdsConfig?
+  socialConfig        SocialConfig?
   clientUsers         ClientUser[]
   proofs              Proof[]
   documents           Document[]
@@ -532,6 +533,75 @@ model GoogleSheetConfig {
   updatedAt      DateTime  @updatedAt
 
   client Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
+}
+
+// ─── SOCIAL MEDIA TRACKING ───────────────────────────────────
+
+enum SocialPlatform {
+  INSTAGRAM
+  FACEBOOK
+}
+
+model SocialConfig {
+  id              String    @id @default(cuid())
+  clientId        String    @unique
+  enabled         Boolean   @default(false)
+  accessToken     String
+  instagramUserId String?
+  facebookPageId  String?
+  lastSyncedAt    DateTime?
+  lastSyncError   String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  client     Client             @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  posts      SocialPost[]
+  dailyStats SocialDailyStats[]
+}
+
+model SocialPost {
+  id           String         @id @default(cuid())
+  configId     String
+  platform     SocialPlatform
+  postId       String
+  thumbnailUrl String?
+  mediaUrl     String?
+  caption      String?
+  permalink    String?
+  mediaType    String?
+  publishedAt  DateTime
+  impressions  Int            @default(0)
+  reach        Int            @default(0)
+  engagement   Int            @default(0)
+  videoViews3s Int            @default(0)
+  likes        Int            @default(0)
+  comments     Int            @default(0)
+  saves        Int            @default(0)
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  config SocialConfig @relation(fields: [configId], references: [id], onDelete: Cascade)
+
+  @@unique([configId, postId])
+  @@index([configId, publishedAt])
+}
+
+model SocialDailyStats {
+  id          String         @id @default(cuid())
+  configId    String
+  platform    SocialPlatform
+  date        DateTime       @db.Date
+  impressions Int            @default(0)
+  reach       Int            @default(0)
+  engagement  Int            @default(0)
+  videoViews  Int            @default(0)
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  config SocialConfig @relation(fields: [configId], references: [id], onDelete: Cascade)
+
+  @@unique([configId, platform, date])
+  @@index([configId, date])
 }
 
 // ─── ACTIVITY LOG ────────────────────────────────────────────

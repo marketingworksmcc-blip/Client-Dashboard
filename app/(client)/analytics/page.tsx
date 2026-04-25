@@ -115,7 +115,12 @@ export default async function ClientAnalyticsPage() {
 
   const externalLinks = reports.filter((r) => r.reportType === "EXTERNAL_LINK" && r.reportUrl);
   const otherReports = reports.filter((r) => r.reportType !== "EXTERNAL_LINK");
-  const isEmpty = !hasMetricData && reports.length === 0 && externalLinks.length === 0;
+  const hasIntegrationData =
+    metaCampaignData.length > 0 ||
+    googleAdsCampaignData.length > 0 ||
+    funnelChannelData.length > 0 ||
+    (keyEventName !== null && keyEventsData.length > 0);
+  const isEmpty = !hasMetricData && reports.length === 0 && externalLinks.length === 0 && !hasIntegrationData;
 
   return (
     <div>

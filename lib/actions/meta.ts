@@ -84,6 +84,76 @@ export async function testMetaConnection(
   }
 }
 
+export interface MetaCreative {
+  id: string;
+  name: string;
+  thumbnailUrl?: string;
+  imageUrl?: string;
+  body?: string;
+  title?: string;
+  callToActionType?: string;
+  campaignName?: string;
+}
+
+export async function fetchMetaCreatives(
+  clientId: string
+): Promise<{ ok: boolean; creatives?: MetaCreative[]; error?: string }> {
+  await requireAdmin();
+
+  const config = await prisma.metaConfig.findUnique({ where: { clientId } });
+  if (!config?.enabled) return { ok: false, error: "Meta Ads not configured or disabled." };
+
+  try {
+    const accountId = normalizeAccountId(config.adAccountId);
+
+    // Fetch active ads with creative info
+    const url = new URL(`${META_BASE}/${accountId}/ads`);
+    url.searchParams.set(
+      "fields",
+      "name,campaign_name,creative{thumbnail_url,image_url,body,title,call_to_action_type}"
+    );
+    url.searchParams.set("effective_status", '["ACTIVE","PAUSED"]');
+    url.searchParams.set("limit", "12");
+    url.searchParams.set("access_token", config.accessToken);
+
+    const res = await fetch(url.toString(), { cache: "no-store" });
+    const json = (await res.json()) as {
+      data?: {
+        id: string;
+        name: string;
+        campaign_name?: string;
+        creative?: {
+          thumbnail_url?: string;
+          image_url?: string;
+          body?: string;
+          title?: string;
+          call_to_action_type?: string;
+        };
+      }[];
+      error?: { message: string };
+    };
+
+    if (!res.ok || json.error) {
+      return { ok: false, error: json.error?.message ?? `HTTP ${res.status}` };
+    }
+
+    const creatives: MetaCreative[] = (json.data ?? []).map((ad) => ({
+      id: ad.id,
+      name: ad.name,
+      campaignName: ad.campaign_name,
+      thumbnailUrl: ad.creative?.thumbnail_url,
+      imageUrl: ad.creative?.image_url,
+      body: ad.creative?.body,
+      title: ad.creative?.title,
+      callToActionType: ad.creative?.call_to_action_type,
+    }));
+
+    return { ok: true, creatives };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : "Failed to fetch creatives." };
+  }
+}
+
 export async function syncMeta(clientId: string): Promise<{ ok: boolean; synced: number; error?: string }> {
   const session = await requireAdmin();
 
@@ -101,7 +171,7 @@ export async function syncMeta(clientId: string): Promise<{ ok: boolean; synced:
     const insightsUrl = new URL(`${META_BASE}/${accountId}/insights`);
     insightsUrl.searchParams.set("fields", `date_start,${metricFields}`);
     insightsUrl.searchParams.set("time_increment", "1");
-    insightsUrl.searchParams.set("date_preset", "last_30_days");
+    insightsUrl.searchParams.set("date_preset", "this_month");
     insightsUrl.searchParams.set("access_token", config.accessToken);
 
     const insightsRes = await fetch(insightsUrl.toString(), { cache: "no-store" });
@@ -156,7 +226,7 @@ export async function syncMeta(clientId: string): Promise<{ ok: boolean; synced:
     const campaignUrl = new URL(`${META_BASE}/${accountId}/insights`);
     campaignUrl.searchParams.set("fields", "campaign_name,spend");
     campaignUrl.searchParams.set("level", "campaign");
-    campaignUrl.searchParams.set("date_preset", "last_30_days");
+    campaignUrl.searchParams.set("date_preset", "this_month");
     campaignUrl.searchParams.set("sort", "spend_descending");
     campaignUrl.searchParams.set("limit", "10");
     campaignUrl.searchParams.set("access_token", config.accessToken);

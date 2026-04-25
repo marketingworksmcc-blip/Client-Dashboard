@@ -60,7 +60,7 @@ export default async function ClientTasksPage() {
           <Card className="border-[#e2e0d9]">
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
-                <CardTitle>Portal Tasks</CardTitle>
+                <CardTitle>Client Tasks</CardTitle>
                 {hasPortalTasks && (
                   <span className="text-xs text-[#8a8880]">
                     {sorted.filter((t) => t.status !== "COMPLETED" && t.status !== "ARCHIVED").length} active

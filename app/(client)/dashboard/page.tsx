@@ -2,31 +2,25 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { SummaryCard } from "@/components/dashboard/SummaryCard";
-import { ActivityFeed } from "@/components/dashboard/ActivityFeed";
 import { DeadlineList } from "@/components/dashboard/DeadlineList";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatCurrency } from "@/lib/utils";
-import { ImageIcon, DollarSign, CheckSquare, FileText, FolderKanban } from "lucide-react";
-import { fetchProject, fetchTasks } from "@/lib/teamwork";
-import Link from "next/link";
+import { ImageIcon, DollarSign, CheckSquare, FileText } from "lucide-react";
+import { TaskChecklistItem } from "@/components/tasks/TaskChecklistItem";
 
 export default async function ClientDashboardPage() {
   const session = await auth();
   const clientId = session!.user.clientIds?.[0] ?? null;
   const firstName = (session!.user.name ?? "").split(" ")[0];
 
-  const teamworkConfig = clientId
-    ? await prisma.teamworkConfig.findUnique({ where: { clientId } })
-    : null;
-
   const [
     pendingProofs,
     activeTasks,
     docsToReview,
     budgetData,
-    recentActivity,
     upcomingProofs,
     upcomingTasks,
+    clientTasks,
   ] = await Promise.all([
     clientId
       ? prisma.proof.count({ where: { clientId, status: { in: ["PENDING_REVIEW", "IN_REVIEW"] } } })
@@ -45,14 +39,6 @@ export default async function ClientDashboardPage() {
         })
       : null,
     clientId
-      ? prisma.activityLog.findMany({
-          where: { clientId },
-          orderBy: { createdAt: "desc" },
-          take: 8,
-          include: { user: { select: { name: true } } },
-        })
-      : [],
-    clientId
       ? prisma.proof.findMany({
           where: { clientId, dueDate: { not: null }, status: { notIn: ["ARCHIVED", "APPROVED"] } },
           select: { id: true, title: true, dueDate: true, status: true },
@@ -68,28 +54,26 @@ export default async function ClientDashboardPage() {
           take: 10,
         })
       : [],
+    clientId
+      ? prisma.task.findMany({
+          where: { clientId, status: { not: "ARCHIVED" } },
+          orderBy: [{ status: "asc" }, { createdAt: "desc" }],
+          include: {
+            notes: { orderBy: { createdAt: "asc" }, include: { user: { select: { name: true } } } },
+          },
+        })
+      : [],
   ]);
-
-  // Fetch Teamwork data if configured
-  let twProject = null;
-  let twOpenTaskCount = 0;
-  if (teamworkConfig?.enabled && teamworkConfig.projectId && teamworkConfig.domain) {
-    try {
-      const [proj, tasks] = await Promise.all([
-        fetchProject(teamworkConfig.domain, teamworkConfig.projectId),
-        fetchTasks(teamworkConfig.domain, teamworkConfig.projectId),
-      ]);
-      twProject = proj;
-      twOpenTaskCount = tasks.length;
-    } catch {
-      // Silently fail — dashboard shows fallback
-    }
-  }
 
   const budgetSpent = budgetData
     ? budgetData.lineItems.reduce((sum, item) => sum + Number(item.amount), 0)
     : null;
   const budgetTotal = budgetData ? Number(budgetData.totalAmount) : null;
+
+  const sortedClientTasks = [
+    ...clientTasks.filter((t) => t.status !== "COMPLETED"),
+    ...clientTasks.filter((t) => t.status === "COMPLETED"),
+  ];
 
   const deadlines = [
     ...upcomingProofs
@@ -145,68 +129,44 @@ export default async function ClientDashboardPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
-        <Card className="border-[#e2e0d9]">
-          <CardHeader className="pb-3">
-            <CardTitle>Recent Activity</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ActivityFeed items={recentActivity} />
-          </CardContent>
-        </Card>
+      <Card className="border-[#e2e0d9]">
+        <CardHeader className="pb-3">
+          <CardTitle>Upcoming Deadlines</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <DeadlineList items={deadlines} />
+        </CardContent>
+      </Card>
 
-        <Card className="border-[#e2e0d9]">
-          <CardHeader className="pb-3">
-            <CardTitle>Upcoming Deadlines</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <DeadlineList items={deadlines} />
-          </CardContent>
-        </Card>
+      {/* Client Tasks */}
+      <Card className="border-[#e2e0d9]">
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between">
+            <CardTitle>Client Tasks</CardTitle>
+            {sortedClientTasks.length > 0 && (
+              <span className="text-xs text-[#8a8880]">
+                {sortedClientTasks.filter((t) => t.status !== "COMPLETED").length} active
+              </span>
+            )}
+          </div>
+        </CardHeader>
+        <CardContent className="p-0">
+          {sortedClientTasks.length === 0 ? (
+            <div className="px-5 py-8 text-center">
+              <CheckSquare className="h-7 w-7 text-[#e2e0d9] mx-auto mb-2" />
+              <p className="text-sm text-[#8a8880]">No tasks yet</p>
+            </div>
+          ) : (
+            <div className="divide-y divide-[#f0efe9]">
+              {sortedClientTasks.map((task) => (
+                <TaskChecklistItem key={task.id} task={task} notes={task.notes} />
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
       </div>
 
-      {/* Teamwork project summary */}
-      {twProject && (
-        <Card className="border-[#e2e0d9]">
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <div className="w-7 h-7 rounded-lg bg-[#f0efe9] flex items-center justify-center">
-                  <FolderKanban className="h-4 w-4 text-[#8a8880]" />
-                </div>
-                <CardTitle>{twProject.name}</CardTitle>
-              </div>
-              <Link
-                href="/teamwork"
-                className="text-xs text-[#8a8880] hover:text-[#464540] transition-colors"
-              >
-                View details →
-              </Link>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {/* Progress bar */}
-            <div>
-              <div className="flex items-center justify-between mb-1.5">
-                <span className="text-xs text-[#8a8880]">
-                  {twProject.completedTaskCount} of {twProject.totalTaskCount} tasks completed
-                </span>
-                <span className="text-xs font-semibold text-[#464540]">
-                  {twProject.percentComplete}%
-                </span>
-              </div>
-              <div className="h-2 bg-[#f0efe9] rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-[#263a2e] rounded-full"
-                  style={{ width: `${twProject.percentComplete}%` }}
-                />
-              </div>
-            </div>
-            <p className="text-xs text-[#8a8880]">
-              {twOpenTaskCount} open task{twOpenTaskCount !== 1 ? "s" : ""} remaining
-            </p>
-          </CardContent>
-        </Card>
-      )}
     </div>
   );
 }

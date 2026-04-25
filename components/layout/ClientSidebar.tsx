@@ -9,13 +9,13 @@ import {
   LayoutDashboard,
   ImageIcon,
   FileText,
-  CheckSquare,
   BarChart2,
   DollarSign,
   LogOut,
   ChevronRight,
   X,
   FolderKanban,
+  TrendingUp,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -23,8 +23,8 @@ const baseNavItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/proofs", label: "Proofs", icon: ImageIcon },
   { href: "/documents", label: "Documents", icon: FileText },
-  { href: "/tasks", label: "Tasks", icon: CheckSquare },
   { href: "/analytics", label: "Analytics", icon: BarChart2 },
+  { href: "/social", label: "Social", icon: TrendingUp },
   { href: "/budget", label: "Budget", icon: DollarSign },
 ];
 
